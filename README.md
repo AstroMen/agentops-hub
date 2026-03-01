@@ -1,70 +1,57 @@
-# AgentOps Dashboard (v0.1)
+# AgentOps Dashboard Framework v0.1
 
-A modular AgentOps dashboard framework with:
+可复用的 Dashboard Framework，覆盖：
+- Tickets 模块进度展示
+- Agent runs/artifacts 展示
+- 审批闸门 + 审计日志
 - RBAC (Admin/Member)
-- Tickets + Approval workflow
-- Runs center (execution history)
-- Audit logs
-- Pluggable business modules (e.g., quant)
 
-> v0.1 Goal: Ship a working skeleton: **DB + API + Web UI + Tickets (approve/queue) + Runs**.
+## Repository structure
+- `apps/dashboard_api/`: FastAPI + SQLAlchemy + Alembic
+- `apps/dashboard_web/`: Next.js 最小看板 UI
+- `infra/docker-compose.yml`: Postgres 开发环境
 
-## Architecture (High-level)
-- **apps/web**: Next.js UI (Ticket Board, Run Center, Strategy Catalog placeholder)
-- **apps/api**: FastAPI backend (RBAC, tickets, runs, audit)
-- **infra**: docker-compose + migrations + scripts
-- **agents**: agent profiles (router, dashboard-dev, ...)
-- **modules**: business modules (quant as a plugin)
-
-Docs:
-- `docs/INSTALL.md`
-- `docs/ARCHITECTURE.md`
-- `docs/RBAC.md`
-- `docs/TASKS.md`
-- `docs/AGENTS.md`
-- `docs/MODULES.md`
-
-## Quickstart (DB only for v0.1 bootstrap)
-
-### Prereqs
-- Docker + Docker Compose
-
-### Start Postgres
+## Quickstart
+1. 启动数据库
 ```bash
 docker compose -f infra/docker-compose.yml up -d
-docker ps
 ```
 
-Connection info (dev):
-- Host: `localhost`
-- Port: `5432`
-- DB: `agentops`
-- User: `agentops`
-- Password: `agentops_dev_password`
-
-Stop:
+2. 安装 API 依赖并配置环境
 ```bash
-docker compose -f infra/docker-compose.yml down
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
 ```
 
-## v0.1 Roadmap
+3. 执行迁移 + RBAC seed
+```bash
+cd apps/dashboard_api
+PYTHONPATH=. alembic upgrade head
+PYTHONPATH=. python -m src.seed
+```
 
-### Core
-- [ ] Postgres schema (users/roles/permissions, tickets, runs, audit_logs)
-- [ ] FastAPI: auth + RBAC middleware
-- [ ] Tickets API: create/list/approve/reject/queue
-- [ ] Runs API: run-next + list
-- [ ] Web UI: Ticket Board + Approve button + Run Center
+4. 启动 API
+```bash
+cd apps/dashboard_api
+PYTHONPATH=. uvicorn src.main:app --reload --port 8000
+```
 
-### Security (v0.1)
-- [ ] Member can create tickets (default `PENDING_APPROVAL`)
-- [ ] Only Admin can approve + queue + execute
-- [ ] Worker only consumes `QUEUED` tickets
-- [ ] Audit log for approve/execute actions
+5. 启动 Web
+```bash
+cd apps/dashboard_web
+npm install
+npm run dev
+```
 
-## Contributing (early)
-- Open an issue or create a ticket in the dashboard (once available).
-- No secrets in repo. Use `.env` locally.
+## INSTALL / RBAC docs
+- 详细安装：`docs/INSTALL.md`
+- 权限说明：`docs/RBAC.md`
 
-## License
-Apache-2.0
+## API checks
+```bash
+curl http://localhost:8000/health
+curl -H "Authorization: Bearer member-dev-token" http://localhost:8000/tickets
+curl -X POST -H "Authorization: Bearer admin-dev-token" http://localhost:8000/tickets/1/approve
+```

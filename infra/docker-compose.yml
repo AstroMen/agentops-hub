@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: agentops-postgres
+    environment:
+      POSTGRES_DB: agentops
+      POSTGRES_USER: agentops
+      POSTGRES_PASSWORD: agentops
+    ports:
+      - '5432:5432'
+    volumes:
+      - agentops_pgdata:/var/lib/postgresql/data
+
+volumes:
+  agentops_pgdata:
