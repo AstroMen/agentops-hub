@@ -12,6 +12,19 @@
 - `infra/docker-compose.yml`: Postgres 开发环境
 
 ## Quickstart
+
+### Option 1: Use start script (recommended)
+```bash
+# Start both API and Web services
+./scripts/start_dev.sh
+```
+
+Services:
+- API: http://localhost:8000
+- Web: http://localhost:3000
+
+### Option 2: Manual start
+
 1. 启动数据库
 ```bash
 docker compose -f infra/docker-compose.yml up -d
