@@ -1,9 +1,11 @@
 'use client';
 
-import { useState } from 'react';
-import { apiFetch } from '../../lib/api';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { apiFetch, getToken } from '../../lib/api';
 
 export default function RunsPage() {
+  const router = useRouter();
   const [runs, setRuns] = useState([]);
   const [error, setError] = useState('');
 
@@ -16,14 +18,22 @@ export default function RunsPage() {
     }
   }
 
+  useEffect(() => {
+    if (!getToken()) {
+      router.push('/login');
+      return;
+    }
+    loadRuns();
+  }, [router]);
+
   return (
     <section className="card">
       <div className="controls" style={{ justifyContent: 'space-between' }}>
         <div>
           <h2 style={{ margin: 0 }}>Runs</h2>
-          <p className="subtitle" style={{ marginTop: 4 }}>查看每次执行记录、状态与产物。</p>
+          <p className="subtitle" style={{ marginTop: 4 }}>View each execution record, status, and generated artifacts.</p>
         </div>
-        <button className="btn" onClick={loadRuns}>Load Runs</button>
+        <button className="btn" onClick={loadRuns}>Refresh</button>
       </div>
 
       {error && <p className="message-error">{error}</p>}

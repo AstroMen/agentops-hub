@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { apiFetch, getToken } from '../../lib/api';
 
 const columns = ['PENDING_APPROVAL', 'APPROVED', 'QUEUED', 'RUNNING', 'DONE', 'FAILED'];
@@ -14,6 +15,7 @@ const defaultForm = {
 };
 
 export default function TicketsPage() {
+  const router = useRouter();
   const [token, setToken] = useState('');
   const [tickets, setTickets] = useState([]);
   const [error, setError] = useState('');
@@ -52,9 +54,13 @@ export default function TicketsPage() {
 
   useEffect(() => {
     const t = getToken();
+    if (!t) {
+      router.push('/login');
+      return;
+    }
     setToken(t);
-    if (t) loadTickets();
-  }, []);
+    loadTickets();
+  }, [router]);
 
   const grouped = useMemo(() => {
     const g = Object.fromEntries(columns.map((c) => [c, []]));
@@ -66,7 +72,7 @@ export default function TicketsPage() {
     <div style={{ display: 'grid', gap: '1rem' }}>
       <section className="card">
         <h2 style={{ marginTop: 0 }}>Tickets Board</h2>
-        <p className="subtitle">创建工单并推动状态流转。管理员 token 可进行审批与队列操作。</p>
+        <p className="subtitle">Create tickets and move them through status transitions.</p>
         <div className="controls" style={{ marginTop: '.5rem' }}>
           <input
             className="input"
