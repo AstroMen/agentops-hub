@@ -86,37 +86,40 @@ export default function TicketsPage() {
       <section className="card">
         <h2 style={{ marginTop: 0 }}>Tickets Board</h2>
         <p className="subtitle">Create tickets and move them through status transitions.</p>
+        {!isAdmin && <p className="message-error">You do not have permission to create tickets with this account.</p>}
         <div className="controls" style={{ marginTop: '.5rem' }}>
           <button className="btn" onClick={loadTickets}>Refresh</button>
         </div>
       </section>
 
-      <form className="card" onSubmit={createTicket}>
-        <h3 style={{ marginTop: 0 }}>Create ticket</h3>
-        <div style={{ display: 'grid', gap: 10, maxWidth: 820 }}>
-          <input className="input" placeholder="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
-          <textarea className="textarea" placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} required />
-          <div style={{ display: 'grid', gap: 8, gridTemplateColumns: 'repeat(3, minmax(160px, 1fr))' }}>
-            <select className="select" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
-              {TICKET_TYPES.map((typeOption) => <option key={typeOption} value={typeOption}>{typeOption}</option>)}
-            </select>
-            <select className="select" value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })}>
-              <option value="P0">P0</option>
-              <option value="P1">P1</option>
-              <option value="P2">P2</option>
-              <option value="P3">P3</option>
-            </select>
-            <select className="select" value={form.assigned_agent} onChange={(e) => setForm({ ...form, assigned_agent: e.target.value })} required>
-              <option value="">Select agent</option>
-              {agents.map((agent) => <option key={agent.id} value={agent.name}>{agent.name}</option>)}
-            </select>
+      {isAdmin && (
+        <form className="card" onSubmit={createTicket}>
+          <h3 style={{ marginTop: 0 }}>Create ticket</h3>
+          <div style={{ display: 'grid', gap: 10, maxWidth: 820 }}>
+            <input className="input" placeholder="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
+            <textarea className="textarea" placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} required />
+            <div style={{ display: 'grid', gap: 8, gridTemplateColumns: 'repeat(3, minmax(160px, 1fr))' }}>
+              <select className="select" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
+                {TICKET_TYPES.map((typeOption) => <option key={typeOption} value={typeOption}>{typeOption}</option>)}
+              </select>
+              <select className="select" value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })}>
+                <option value="P0">P0</option>
+                <option value="P1">P1</option>
+                <option value="P2">P2</option>
+                <option value="P3">P3</option>
+              </select>
+              <select className="select" value={form.assigned_agent} onChange={(e) => setForm({ ...form, assigned_agent: e.target.value })} required>
+                <option value="">Select agent</option>
+                {agents.map((agent) => <option key={agent.id} value={agent.name}>{agent.name}</option>)}
+              </select>
+            </div>
+            <div className="controls">
+              <button className="btn" type="submit">Create</button>
+              {formMessage && <small className={formMessage.startsWith('Create failed') ? 'message-error' : 'message-success'}>{formMessage}</small>}
+            </div>
           </div>
-          <div className="controls">
-            <button className="btn" type="submit">Create</button>
-            {formMessage && <small className={formMessage.startsWith('Create failed') ? 'message-error' : 'message-success'}>{formMessage}</small>}
-          </div>
-        </div>
-      </form>
+        </form>
+      )}
 
       {error && <p className="message-error">{error}</p>}
       <section className="board">

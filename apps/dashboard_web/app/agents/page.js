@@ -73,19 +73,21 @@ export default function AgentsPage() {
         {!isAdmin && <p className="message-error">Your account is read-only on this page. Please login as admin to manage agents.</p>}
       </section>
 
-      <form className="card" onSubmit={submitForm} style={{ display: 'grid', gap: 10, maxWidth: 760 }}>
-        <h3 style={{ marginTop: 0 }}>{editingId ? 'Edit agent' : 'Create agent'}</h3>
-        <input className="input" placeholder="Agent name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
-        <textarea className="textarea" placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
-        <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <input type="checkbox" checked={form.is_active} onChange={(e) => setForm({ ...form, is_active: e.target.checked })} />
-          Active
-        </label>
-        <div className="controls">
-          <button className="btn" type="submit">{editingId ? 'Update' : 'Create'}</button>
-          {editingId && <button type="button" className="btn btn-secondary" onClick={() => { setEditingId(null); setForm(emptyForm); }}>Cancel</button>}
-        </div>
-      </form>
+      {isAdmin && (
+        <form className="card" onSubmit={submitForm} style={{ display: 'grid', gap: 10, maxWidth: 760 }}>
+          <h3 style={{ marginTop: 0 }}>{editingId ? 'Edit agent' : 'Create agent'}</h3>
+          <input className="input" placeholder="Agent name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+          <textarea className="textarea" placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+          <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <input type="checkbox" checked={form.is_active} onChange={(e) => setForm({ ...form, is_active: e.target.checked })} />
+            Active
+          </label>
+          <div className="controls">
+            <button className="btn" type="submit">{editingId ? 'Update' : 'Create'}</button>
+            {editingId && <button type="button" className="btn btn-secondary" onClick={() => { setEditingId(null); setForm(emptyForm); }}>Cancel</button>}
+          </div>
+        </form>
+      )}
 
       {error && <p className="message-error">{error}</p>}
 
