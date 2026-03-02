@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiFetch, getToken } from '../../lib/api';
@@ -16,13 +17,12 @@ const defaultForm = {
 
 export default function TicketsPage() {
   const router = useRouter();
-  const [token, setToken] = useState('');
   const [tickets, setTickets] = useState([]);
   const [error, setError] = useState('');
   const [form, setForm] = useState(defaultForm);
   const [formMessage, setFormMessage] = useState('');
 
-  const isAdmin = token && token === (process.env.NEXT_PUBLIC_ADMIN_TOKEN || 'admin-dev-token');
+  const isAdmin = getToken() === (process.env.NEXT_PUBLIC_ADMIN_TOKEN || 'admin-dev-token');
 
   async function loadTickets() {
     try {
@@ -58,7 +58,6 @@ export default function TicketsPage() {
       router.push('/login');
       return;
     }
-    setToken(t);
     loadTickets();
   }, [router]);
 
@@ -74,17 +73,7 @@ export default function TicketsPage() {
         <h2 style={{ marginTop: 0 }}>Tickets Board</h2>
         <p className="subtitle">Create tickets and move them through status transitions.</p>
         <div className="controls" style={{ marginTop: '.5rem' }}>
-          <input
-            className="input"
-            style={{ maxWidth: 300 }}
-            placeholder="paste dev token"
-            defaultValue={token}
-            onBlur={(e) => {
-              localStorage.setItem('dashboard_token', e.target.value);
-              setToken(e.target.value);
-            }}
-          />
-          <button className="btn" onClick={loadTickets}>Load</button>
+          <button className="btn" onClick={loadTickets}>Refresh</button>
         </div>
       </section>
 
@@ -124,6 +113,9 @@ export default function TicketsPage() {
               <article key={t.id} className="ticket">
                 <div className="ticket-title">#{t.id} {t.title}</div>
                 <div className="ticket-meta">{t.type} / {t.priority}</div>
+                {(isAdmin || t.status === 'PENDING_APPROVAL') && (
+                  <Link className="ticket-edit-link" href={`/tickets/${t.id}`}>Edit</Link>
+                )}
                 {isAdmin && (
                   <div className="controls" style={{ marginTop: 8 }}>
                     {t.status === 'PENDING_APPROVAL' && (
