@@ -1,15 +1,19 @@
 from datetime import datetime
 
+from typing import Literal
+
 from pydantic import BaseModel
 
 from src.models import RunStatus, TicketPriority, TicketStatus
+
+TicketType = Literal['Bug', 'Improvement', 'Documentation Needed', 'Task', 'New Feature']
 
 
 class TicketOut(BaseModel):
     id: int
     title: str
     description: str
-    type: str
+    type: TicketType
     status: TicketStatus
     priority: TicketPriority
     created_by: int
@@ -27,7 +31,7 @@ class TicketOut(BaseModel):
 class TicketCreate(BaseModel):
     title: str
     description: str
-    type: str
+    type: TicketType
     priority: TicketPriority = TicketPriority.P2
     assigned_agent: str = 'dashboard-dev'
     metadata_json: dict | None = None
@@ -36,7 +40,7 @@ class TicketCreate(BaseModel):
 class TicketUpdate(BaseModel):
     title: str
     description: str
-    type: str
+    type: TicketType
     priority: TicketPriority
     assigned_agent: str
     metadata_json: dict | None = None
@@ -74,3 +78,24 @@ class AuditOut(BaseModel):
     created_at: datetime
 
     model_config = {'from_attributes': True}
+
+
+class AgentOut(BaseModel):
+    id: int
+    name: str
+    description: str | None = None
+    is_active: bool
+
+    model_config = {'from_attributes': True}
+
+
+class AgentCreate(BaseModel):
+    name: str
+    description: str | None = None
+    is_active: bool = True
+
+
+class AgentUpdate(BaseModel):
+    name: str
+    description: str | None = None
+    is_active: bool

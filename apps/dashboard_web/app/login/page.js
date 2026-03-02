@@ -18,7 +18,13 @@ export default function LoginPage() {
       router.push('/tickets');
       return;
     }
-    setError('Invalid credentials. Use admin / admin.');
+    if (username === 'member' && password === 'member') {
+      setToken(process.env.NEXT_PUBLIC_MEMBER_TOKEN || 'member-dev-token');
+      setError('');
+      router.push('/tickets');
+      return;
+    }
+    setError('Invalid credentials. Use admin/admin or member/member.');
   }
 
   return (

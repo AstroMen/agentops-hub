@@ -71,6 +71,19 @@ class RolePermission(Base):
     permission_id: Mapped[int] = mapped_column(ForeignKey('permissions.id', ondelete='CASCADE'))
 
 
+
+
+class Agent(Base):
+    __tablename__ = 'agents'
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(120), unique=True, index=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
 class Ticket(Base):
     __tablename__ = 'tickets'
 
