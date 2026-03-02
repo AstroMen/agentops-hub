@@ -7,12 +7,14 @@ import { apiFetch, getToken } from '../../lib/api';
 
 const columns = ['PENDING_APPROVAL', 'APPROVED', 'QUEUED', 'RUNNING', 'DONE', 'FAILED'];
 
+const TICKET_TYPES = ['Bug', 'Improvement', 'Documentation Needed', 'Task', 'New Feature'];
+
 const defaultForm = {
   title: '',
   description: '',
-  type: 'feature',
+  type: 'Task',
   priority: 'P2',
-  assigned_agent: 'dashboard-dev',
+  assigned_agent: '',
 };
 
 export default function TicketsPage() {
@@ -21,8 +23,14 @@ export default function TicketsPage() {
   const [error, setError] = useState('');
   const [form, setForm] = useState(defaultForm);
   const [formMessage, setFormMessage] = useState('');
+  const [agents, setAgents] = useState([]);
 
   const isAdmin = getToken() === (process.env.NEXT_PUBLIC_ADMIN_TOKEN || 'admin-dev-token');
+
+  async function loadAgents() {
+    const data = await apiFetch('/agents');
+    setAgents(data.filter((agent) => agent.is_active));
+  }
 
   async function loadTickets() {
     try {
@@ -44,7 +52,7 @@ export default function TicketsPage() {
     try {
       setFormMessage('');
       await apiFetch('/tickets', { method: 'POST', body: JSON.stringify(form) });
-      setForm(defaultForm);
+      setForm({ ...defaultForm, assigned_agent: agents[0]?.name || '' });
       setFormMessage('Ticket created');
       await loadTickets();
     } catch (err) {
@@ -58,8 +66,14 @@ export default function TicketsPage() {
       router.push('/login');
       return;
     }
-    loadTickets();
+    Promise.all([loadTickets(), loadAgents()]);
   }, [router]);
+
+  useEffect(() => {
+    if (!form.assigned_agent && agents.length > 0) {
+      setForm((prev) => ({ ...prev, assigned_agent: agents[0].name }));
+    }
+  }, [agents, form.assigned_agent]);
 
   const grouped = useMemo(() => {
     const g = Object.fromEntries(columns.map((c) => [c, []]));
@@ -83,19 +97,19 @@ export default function TicketsPage() {
           <input className="input" placeholder="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
           <textarea className="textarea" placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} required />
           <div style={{ display: 'grid', gap: 8, gridTemplateColumns: 'repeat(3, minmax(160px, 1fr))' }}>
-            <input className="input" placeholder="Type" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} />
+            <select className="select" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
+              {TICKET_TYPES.map((typeOption) => <option key={typeOption} value={typeOption}>{typeOption}</option>)}
+            </select>
             <select className="select" value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })}>
               <option value="P0">P0</option>
               <option value="P1">P1</option>
               <option value="P2">P2</option>
               <option value="P3">P3</option>
             </select>
-            <input
-              className="input"
-              placeholder="Assigned agent"
-              value={form.assigned_agent}
-              onChange={(e) => setForm({ ...form, assigned_agent: e.target.value })}
-            />
+            <select className="select" value={form.assigned_agent} onChange={(e) => setForm({ ...form, assigned_agent: e.target.value })} required>
+              <option value="">Select agent</option>
+              {agents.map((agent) => <option key={agent.id} value={agent.name}>{agent.name}</option>)}
+            </select>
           </div>
           <div className="controls">
             <button className="btn" type="submit">Create</button>

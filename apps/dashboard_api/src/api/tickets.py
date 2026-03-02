@@ -6,15 +6,24 @@ from sqlalchemy.orm import Session
 
 from src.core.auth import CurrentUser, get_current_user, require_admin
 from src.db.session import get_db
-from src.models import Ticket, TicketPriority, TicketStatus
+from src.models import Agent, Ticket, TicketPriority, TicketStatus
 from src.schemas.common import ActionPayload, TicketCreate, TicketOut, TicketUpdate
 from src.services.audit import write_audit
 
 router = APIRouter(prefix='/tickets', tags=['tickets'])
 
 
+def _ensure_agent_exists(db: Session, agent_name: str):
+    agent = db.execute(select(Agent).where(Agent.name == agent_name, Agent.is_active.is_(True))).scalar_one_or_none()
+    if not agent:
+        raise HTTPException(400, 'Assigned agent does not exist or is inactive')
+
+
+
 @router.post('', response_model=TicketOut)
 def create_ticket(payload: TicketCreate, db: Session = Depends(get_db), user: CurrentUser = Depends(get_current_user)):
+    _ensure_agent_exists(db, payload.assigned_agent)
+
     ticket = Ticket(
         title=payload.title,
         description=payload.description,
@@ -60,6 +69,8 @@ def update_ticket(ticket_id: int, payload: TicketUpdate, db: Session = Depends(g
         raise HTTPException(404, 'Ticket not found')
 
     _ensure_update_permission(ticket, user)
+
+    _ensure_agent_exists(db, payload.assigned_agent)
 
     ticket.title = payload.title
     ticket.description = payload.description

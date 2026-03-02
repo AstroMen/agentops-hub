@@ -5,10 +5,12 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { apiFetch, getToken } from '../../../lib/api';
 
+const TICKET_TYPES = ['Bug', 'Improvement', 'Documentation Needed', 'Task', 'New Feature'];
+
 const emptyForm = {
   title: '',
   description: '',
-  type: '',
+  type: 'Task',
   priority: 'P2',
   assigned_agent: '',
 };
@@ -21,6 +23,7 @@ export default function TicketEditPage() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [agents, setAgents] = useState([]);
 
   useEffect(() => {
     const token = getToken();
@@ -29,10 +32,12 @@ export default function TicketEditPage() {
       return;
     }
 
-    async function loadTicket() {
+    async function loadPageData() {
       try {
         setError('');
-        const ticket = await apiFetch(`/tickets/${ticketId}`);
+        const [ticket, agentList] = await Promise.all([apiFetch(`/tickets/${ticketId}`), apiFetch('/agents')]);
+        const activeAgents = agentList.filter((agent) => agent.is_active);
+        setAgents(activeAgents);
         setForm({
           title: ticket.title,
           description: ticket.description,
@@ -48,7 +53,7 @@ export default function TicketEditPage() {
     }
 
     if (ticketId) {
-      loadTicket();
+      loadPageData();
     }
   }, [router, ticketId]);
 
@@ -81,14 +86,19 @@ export default function TicketEditPage() {
           <input className="input" placeholder="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
           <textarea className="textarea" placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} required />
           <div style={{ display: 'grid', gap: 8, gridTemplateColumns: 'repeat(3, minmax(160px, 1fr))' }}>
-            <input className="input" placeholder="Type" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} required />
+            <select className="select" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
+              {TICKET_TYPES.map((typeOption) => <option key={typeOption} value={typeOption}>{typeOption}</option>)}
+            </select>
             <select className="select" value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })}>
               <option value="P0">P0</option>
               <option value="P1">P1</option>
               <option value="P2">P2</option>
               <option value="P3">P3</option>
             </select>
-            <input className="input" placeholder="Assigned agent" value={form.assigned_agent} onChange={(e) => setForm({ ...form, assigned_agent: e.target.value })} required />
+            <select className="select" value={form.assigned_agent} onChange={(e) => setForm({ ...form, assigned_agent: e.target.value })} required>
+              <option value="">Select agent</option>
+              {agents.map((agent) => <option key={agent.id} value={agent.name}>{agent.name}</option>)}
+            </select>
           </div>
 
           <div className="controls">

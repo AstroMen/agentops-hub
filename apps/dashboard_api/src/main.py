@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from src.api.agents import router as agents_router
 from src.api.audit import router as audit_router
 from src.api.runs import router as runs_router
 from src.api.tickets import router as tickets_router
@@ -28,5 +29,6 @@ def version():
 
 
 app.include_router(tickets_router)
+app.include_router(agents_router)
 app.include_router(runs_router)
 app.include_router(audit_router)
