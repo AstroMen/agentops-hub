@@ -58,6 +58,34 @@ npm install
 npm run dev
 ```
 
+
+## 权限与 Token 业务逻辑（Dashboard Web + API）
+
+### 1) 后端鉴权是唯一权限来源
+- API 只认 `Authorization: Bearer <token>`。
+- `ADMIN_TOKEN` 映射为 Admin，`MEMBER_TOKEN` 映射为 Member。
+- 前端页面上的「是否可操作」仅用于 UX 提示；真正权限由后端 `401/403` 决定。
+
+### 2) 前端登录与本地状态
+- 登录页内置两组开发账号：`admin/admin` 与 `member/member`。
+- 登录成功后，前端会把 token 和 username 写入 `localStorage`：
+  - `dashboard_token`
+  - `dashboard_username`
+- 页面判断是否 Admin 时，优先使用 `dashboard_username`（避免仅靠 token 字符串比较带来的误判）；如果 username 缺失，再回退到 token 对比。
+
+### 3) `NEXT_PUBLIC_MEMBER_TOKEN` 的配置要点
+- `NEXT_PUBLIC_*` 变量会暴露到浏览器，只应放开发/演示 token。
+- 若后端改了 `MEMBER_TOKEN`，前端也必须同步 `NEXT_PUBLIC_MEMBER_TOKEN`，否则 member 登录会拿到错误 token 并返回 `401 Invalid token`。
+- 默认开发值：
+  - Admin: `admin-dev-token`
+  - Member: `member-dev-token`
+
+### 4) 推荐的本地联调检查
+```bash
+curl -H "Authorization: Bearer ${ADMIN_TOKEN:-admin-dev-token}" http://localhost:8000/tickets
+curl -H "Authorization: Bearer ${MEMBER_TOKEN:-member-dev-token}" http://localhost:8000/tickets
+```
+
 ## INSTALL / RBAC docs
 - 详细安装：`docs/INSTALL.md`
 - 权限说明：`docs/RBAC.md`

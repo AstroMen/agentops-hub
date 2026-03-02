@@ -12,14 +12,18 @@ export default function LoginPage() {
 
   function handleLogin(e) {
     e.preventDefault();
+
+    const adminToken = process.env.NEXT_PUBLIC_ADMIN_TOKEN || 'admin-dev-token';
+    const memberToken = process.env.NEXT_PUBLIC_MEMBER_TOKEN || 'member-dev-token';
+
     if (username === 'admin' && password === 'admin') {
-      setToken(process.env.NEXT_PUBLIC_ADMIN_TOKEN || 'admin-dev-token', 'admin');
+      setToken(adminToken, 'admin');
       setError('');
       router.push('/tickets');
       return;
     }
     if (username === 'member' && password === 'member') {
-      setToken(process.env.NEXT_PUBLIC_MEMBER_TOKEN || 'member-dev-token', 'member');
+      setToken(memberToken, 'member');
       setError('');
       router.push('/tickets');
       return;
