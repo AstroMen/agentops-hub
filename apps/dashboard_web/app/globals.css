@@ -114,3 +114,15 @@ a { color: inherit; text-decoration: none; }
 .table { width: 100%; border-collapse: collapse; font-size: .92rem; }
 .table th, .table td { padding: .65rem; border-bottom: 1px solid var(--border); text-align: left; }
 .table thead { background: var(--surface-soft); }
+
+.ticket-edit-link {
+  display: inline-block;
+  margin-top: .45rem;
+  font-size: .82rem;
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.ticket-edit-link:hover {
+  text-decoration: underline;
+}

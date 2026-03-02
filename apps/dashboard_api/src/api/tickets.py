@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from src.core.auth import CurrentUser, get_current_user, require_admin
 from src.db.session import get_db
 from src.models import Ticket, TicketPriority, TicketStatus
-from src.schemas.common import ActionPayload, TicketCreate, TicketOut
+from src.schemas.common import ActionPayload, TicketCreate, TicketOut, TicketUpdate
 from src.services.audit import write_audit
 
 router = APIRouter(prefix='/tickets', tags=['tickets'])
@@ -53,12 +53,42 @@ def list_tickets(
     return list(db.execute(stmt.order_by(Ticket.id.desc())).scalars())
 
 
+@router.put('/{ticket_id}', response_model=TicketOut)
+def update_ticket(ticket_id: int, payload: TicketUpdate, db: Session = Depends(get_db), user: CurrentUser = Depends(get_current_user)):
+    ticket = db.get(Ticket, ticket_id)
+    if not ticket:
+        raise HTTPException(404, 'Ticket not found')
+
+    _ensure_update_permission(ticket, user)
+
+    ticket.title = payload.title
+    ticket.description = payload.description
+    ticket.type = payload.type
+    ticket.priority = payload.priority
+    ticket.assigned_agent = payload.assigned_agent
+    ticket.metadata_json = payload.metadata_json
+
+    write_audit(db, user.id, 'TICKET_UPDATED', 'ticket', str(ticket.id), {'title': payload.title})
+    db.commit()
+    db.refresh(ticket)
+    return ticket
+
+
 @router.get('/{ticket_id}', response_model=TicketOut)
 def get_ticket(ticket_id: int, db: Session = Depends(get_db), _: CurrentUser = Depends(get_current_user)):
     ticket = db.get(Ticket, ticket_id)
     if not ticket:
         raise HTTPException(404, 'Ticket not found')
     return ticket
+
+
+def _ensure_update_permission(ticket: Ticket, user: CurrentUser):
+    if user.role == 'Admin':
+        return
+    if ticket.created_by != user.id:
+        raise HTTPException(403, 'You can only edit your own tickets')
+    if ticket.status != TicketStatus.PENDING_APPROVAL:
+        raise HTTPException(403, 'Only pending tickets can be edited by members')
 
 
 def _transition(ticket: Ticket, expect: TicketStatus, to: TicketStatus):

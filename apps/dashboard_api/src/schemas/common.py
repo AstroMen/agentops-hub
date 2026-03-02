@@ -33,6 +33,15 @@ class TicketCreate(BaseModel):
     metadata_json: dict | None = None
 
 
+class TicketUpdate(BaseModel):
+    title: str
+    description: str
+    type: str
+    priority: TicketPriority
+    assigned_agent: str
+    metadata_json: dict | None = None
+
+
 class ActionPayload(BaseModel):
     reason: str | None = None
 
