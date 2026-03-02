@@ -13,13 +13,13 @@ export default function LoginPage() {
   function handleLogin(e) {
     e.preventDefault();
     if (username === 'admin' && password === 'admin') {
-      setToken(process.env.NEXT_PUBLIC_ADMIN_TOKEN || 'admin-dev-token');
+      setToken(process.env.NEXT_PUBLIC_ADMIN_TOKEN || 'admin-dev-token', 'admin');
       setError('');
       router.push('/tickets');
       return;
     }
     if (username === 'member' && password === 'member') {
-      setToken(process.env.NEXT_PUBLIC_MEMBER_TOKEN || 'member-dev-token');
+      setToken(process.env.NEXT_PUBLIC_MEMBER_TOKEN || 'member-dev-token', 'member');
       setError('');
       router.push('/tickets');
       return;
