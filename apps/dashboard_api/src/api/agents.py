@@ -52,6 +52,11 @@ def update_agent(agent_id: int, payload: AgentUpdate, db: Session = Depends(get_
     return agent
 
 
+@router.post('/{agent_id}/update', response_model=AgentOut)
+def update_agent_via_post(agent_id: int, payload: AgentUpdate, db: Session = Depends(get_db), user: CurrentUser = Depends(require_admin)):
+    return update_agent(agent_id=agent_id, payload=payload, db=db, user=user)
+
+
 @router.delete('/{agent_id}')
 def delete_agent(agent_id: int, db: Session = Depends(get_db), user: CurrentUser = Depends(require_admin)):
     agent = db.get(Agent, agent_id)
