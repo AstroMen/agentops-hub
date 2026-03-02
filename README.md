@@ -68,3 +68,43 @@ curl http://localhost:8000/health
 curl -H "Authorization: Bearer member-dev-token" http://localhost:8000/tickets
 curl -X POST -H "Authorization: Bearer admin-dev-token" http://localhost:8000/tickets/1/approve
 ```
+
+## Troubleshooting
+
+### 查看 API 日志
+API 服务运行在后台时，日志会输出到进程终端。
+
+1. **查看当前运行的 API 进程**:
+   ```bash
+   ps aux | grep uvicorn
+   ```
+
+2. **使用 process 工具查看日志**:
+   ```bash
+   # 列出所有后台会话
+   process action=list
+
+   # 查看特定会话的日志 (替换 <session-id>)
+   process action=log sessionId=<session-id>
+   ```
+
+3. **常见问题**:
+   - **404 Not Found**: 检查 API 是否重启，新路由是否加载（尝试重启服务）
+   - **401 Unauthorized**: 检查 token 是否正确（默认: `admin-dev-token` / `member-dev-token`）
+   - **数据库连接失败**: 确认 PostgreSQL 容器运行中 `docker ps`
+
+### 查看 Web 日志
+Next.js 前端日志同样输出到终端，检查 npm 进程：
+```bash
+ps aux | grep "next dev"
+```
+
+### 重启服务
+```bash
+# 停止现有进程
+pkill -f "dashboard_api" && pkill -f "dashboard_web"
+
+# 重启
+cd apps/dashboard_api && python3 -m uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
+cd apps/dashboard_web && npm run dev
+```
