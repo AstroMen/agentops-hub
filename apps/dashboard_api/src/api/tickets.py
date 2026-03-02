@@ -74,6 +74,11 @@ def update_ticket(ticket_id: int, payload: TicketUpdate, db: Session = Depends(g
     return ticket
 
 
+@router.post('/{ticket_id}/update', response_model=TicketOut)
+def update_ticket_via_post(ticket_id: int, payload: TicketUpdate, db: Session = Depends(get_db), user: CurrentUser = Depends(get_current_user)):
+    return update_ticket(ticket_id=ticket_id, payload=payload, db=db, user=user)
+
+
 @router.get('/{ticket_id}', response_model=TicketOut)
 def get_ticket(ticket_id: int, db: Session = Depends(get_db), _: CurrentUser = Depends(get_current_user)):
     ticket = db.get(Ticket, ticket_id)

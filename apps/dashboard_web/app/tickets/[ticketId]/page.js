@@ -57,8 +57,8 @@ export default function TicketEditPage() {
     try {
       setMessage('');
       setError('');
-      await apiFetch(`/tickets/${ticketId}`, {
-        method: 'PUT',
+      await apiFetch(`/tickets/${ticketId}/update`, {
+        method: 'POST',
         body: JSON.stringify(form),
       });
       setMessage('Ticket updated successfully.');

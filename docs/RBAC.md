@@ -23,6 +23,7 @@
   - `GET /tickets`
   - `GET /tickets/{id}`
   - `PUT /tickets/{id}` (Admin can edit any ticket; Member can only edit their own `PENDING_APPROVAL` tickets)
+  - `POST /tickets/{id}/update` (same permission rules as `PUT`, for environments that only allow GET/POST)
 - Admin only
   - `POST /tickets/{id}/approve`
   - `POST /tickets/{id}/reject`
