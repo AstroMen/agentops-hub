@@ -15,6 +15,7 @@ export default function RootLayout({ children }) {
             <nav className="nav-links">
               <a className="nav-link" href="/tickets">Tickets</a>
               <a className="nav-link" href="/runs">Runs</a>
+              <a className="nav-link" href="/login">Login</a>
             </nav>
           </header>
           {children}

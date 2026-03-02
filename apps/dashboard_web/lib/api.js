@@ -5,6 +5,16 @@ export function getToken() {
   return localStorage.getItem('dashboard_token') || '';
 }
 
+export function setToken(token) {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem('dashboard_token', token);
+}
+
+export function clearToken() {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem('dashboard_token');
+}
+
 export async function apiFetch(path, options = {}) {
   const token = getToken();
   const res = await fetch(`${API_URL}${path}`, {
