@@ -66,7 +66,7 @@ export default function TicketsPage() {
     <div style={{ display: 'grid', gap: '1rem' }}>
       <section className="card">
         <h2 style={{ marginTop: 0 }}>Tickets Board</h2>
-        <p className="subtitle">创建工单并推动状态流转。管理员 token 可进行审批与队列操作。</p>
+        <p className="subtitle">Create tickets and move them through status transitions. Admin token is required for approval and queue actions.</p>
         <div className="controls" style={{ marginTop: '.5rem' }}>
           <input
             className="input"

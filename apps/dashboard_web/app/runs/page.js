@@ -21,7 +21,7 @@ export default function RunsPage() {
       <div className="controls" style={{ justifyContent: 'space-between' }}>
         <div>
           <h2 style={{ margin: 0 }}>Runs</h2>
-          <p className="subtitle" style={{ marginTop: 4 }}>查看每次执行记录、状态与产物。</p>
+          <p className="subtitle" style={{ marginTop: 4 }}>View each execution record, status, and generated artifacts.</p>
         </div>
         <button className="btn" onClick={loadRuns}>Load Runs</button>
       </div>
