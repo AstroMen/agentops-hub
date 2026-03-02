@@ -63,71 +63,77 @@ export default function TicketsPage() {
   }, [tickets]);
 
   return (
-    <div>
-      <h2>Tickets Board</h2>
-      <input
-        placeholder="paste dev token"
-        defaultValue={token}
-        onBlur={(e) => {
-          localStorage.setItem('dashboard_token', e.target.value);
-          setToken(e.target.value);
-        }}
-      />
-      <button onClick={loadTickets}>Load</button>
+    <div style={{ display: 'grid', gap: '1rem' }}>
+      <section className="card">
+        <h2 style={{ marginTop: 0 }}>Tickets Board</h2>
+        <p className="subtitle">创建工单并推动状态流转。管理员 token 可进行审批与队列操作。</p>
+        <div className="controls" style={{ marginTop: '.5rem' }}>
+          <input
+            className="input"
+            style={{ maxWidth: 300 }}
+            placeholder="paste dev token"
+            defaultValue={token}
+            onBlur={(e) => {
+              localStorage.setItem('dashboard_token', e.target.value);
+              setToken(e.target.value);
+            }}
+          />
+          <button className="btn" onClick={loadTickets}>Load</button>
+        </div>
+      </section>
 
-      <form onSubmit={createTicket} style={{ marginTop: 16, border: '1px solid #ddd', padding: 12 }}>
-        <h3>Create ticket</h3>
-        <div style={{ display: 'grid', gap: 8, maxWidth: 640 }}>
-          <input placeholder="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
-          <textarea placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} required />
-          <div style={{ display: 'flex', gap: 8 }}>
-            <input placeholder="Type" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} />
-            <select value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })}>
+      <form className="card" onSubmit={createTicket}>
+        <h3 style={{ marginTop: 0 }}>Create ticket</h3>
+        <div style={{ display: 'grid', gap: 10, maxWidth: 820 }}>
+          <input className="input" placeholder="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
+          <textarea className="textarea" placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} required />
+          <div style={{ display: 'grid', gap: 8, gridTemplateColumns: 'repeat(3, minmax(160px, 1fr))' }}>
+            <input className="input" placeholder="Type" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} />
+            <select className="select" value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })}>
               <option value="P0">P0</option>
               <option value="P1">P1</option>
               <option value="P2">P2</option>
               <option value="P3">P3</option>
             </select>
             <input
+              className="input"
               placeholder="Assigned agent"
               value={form.assigned_agent}
               onChange={(e) => setForm({ ...form, assigned_agent: e.target.value })}
             />
           </div>
-          <button type="submit">Create</button>
-          {formMessage && <small>{formMessage}</small>}
+          <div className="controls">
+            <button className="btn" type="submit">Create</button>
+            {formMessage && <small className={formMessage.startsWith('Create failed') ? 'message-error' : 'message-success'}>{formMessage}</small>}
+          </div>
         </div>
       </form>
 
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, minmax(160px, 1fr))', gap: 8, marginTop: 12 }}>
+      {error && <p className="message-error">{error}</p>}
+      <section className="board">
         {columns.map((col) => (
-          <div key={col} style={{ border: '1px solid #ddd', padding: 8 }}>
+          <div key={col} className="column">
             <h4>{col}</h4>
             {grouped[col].map((t) => (
-              <div key={t.id} style={{ border: '1px solid #eee', marginBottom: 8, padding: 6 }}>
-                <div>
-                  #{t.id} {t.title}
-                </div>
-                <small>
-                  {t.type} / {t.priority}
-                </small>
+              <article key={t.id} className="ticket">
+                <div className="ticket-title">#{t.id} {t.title}</div>
+                <div className="ticket-meta">{t.type} / {t.priority}</div>
                 {isAdmin && (
-                  <div style={{ marginTop: 6, display: 'flex', gap: 4 }}>
+                  <div className="controls" style={{ marginTop: 8 }}>
                     {t.status === 'PENDING_APPROVAL' && (
                       <>
-                        <button onClick={() => action(t.id, 'approve')}>Approve</button>
-                        <button onClick={() => action(t.id, 'reject')}>Reject</button>
+                        <button className="btn btn-secondary" onClick={() => action(t.id, 'approve')}>Approve</button>
+                        <button className="btn btn-danger" onClick={() => action(t.id, 'reject')}>Reject</button>
                       </>
                     )}
-                    {t.status === 'APPROVED' && <button onClick={() => action(t.id, 'queue')}>Queue</button>}
+                    {t.status === 'APPROVED' && <button className="btn btn-secondary" onClick={() => action(t.id, 'queue')}>Queue</button>}
                   </div>
                 )}
-              </div>
+              </article>
             ))}
           </div>
         ))}
-      </div>
+      </section>
     </div>
   );
 }
