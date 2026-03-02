@@ -12,22 +12,24 @@ export default function AgentsPage() {
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
   const [error, setError] = useState('');
-
-  const isAdmin = getToken() === (process.env.NEXT_PUBLIC_ADMIN_TOKEN || 'admin-dev-token');
-
-  async function loadAgents() {
-    const data = await apiFetch('/agents');
-    setAgents(data);
-  }
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
+    // Check admin status on client side only
     const token = getToken();
+    setIsAdmin(token === (process.env.NEXT_PUBLIC_ADMIN_TOKEN || 'admin-dev-token'));
+    
     if (!token) {
       router.push('/login');
       return;
     }
     loadAgents().catch((err) => setError(String(err.message)));
   }, [router]);
+
+  async function loadAgents() {
+    const data = await apiFetch('/agents');
+    setAgents(data);
+  }
 
   async function submitForm(e) {
     e.preventDefault();
