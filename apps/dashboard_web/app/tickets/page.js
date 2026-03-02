@@ -74,7 +74,17 @@ export default function TicketsPage() {
         <h2 style={{ marginTop: 0 }}>Tickets Board</h2>
         <p className="subtitle">Create tickets and move them through status transitions.</p>
         <div className="controls" style={{ marginTop: '.5rem' }}>
-          <button className="btn" onClick={loadTickets}>Refresh</button>
+          <input
+            className="input"
+            style={{ maxWidth: 300 }}
+            placeholder="paste dev token"
+            defaultValue={token}
+            onBlur={(e) => {
+              localStorage.setItem('dashboard_token', e.target.value);
+              setToken(e.target.value);
+            }}
+          />
+          <button className="btn" onClick={loadTickets}>Load</button>
         </div>
       </section>
 
