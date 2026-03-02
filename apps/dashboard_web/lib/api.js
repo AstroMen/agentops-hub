@@ -1,18 +1,38 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const TOKEN_KEY = 'dashboard_token';
+const USERNAME_KEY = 'dashboard_username';
+
+function emitAuthChange() {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new Event('auth-change'));
+}
 
 export function getToken() {
   if (typeof window === 'undefined') return '';
-  return localStorage.getItem('dashboard_token') || '';
+  return localStorage.getItem(TOKEN_KEY) || '';
 }
 
-export function setToken(token) {
+export function getUsername() {
+  if (typeof window === 'undefined') return '';
+  return localStorage.getItem(USERNAME_KEY) || '';
+}
+
+export function setToken(token, username = '') {
   if (typeof window === 'undefined') return;
-  localStorage.setItem('dashboard_token', token);
+  localStorage.setItem(TOKEN_KEY, token);
+  if (username) {
+    localStorage.setItem(USERNAME_KEY, username);
+  } else {
+    localStorage.removeItem(USERNAME_KEY);
+  }
+  emitAuthChange();
 }
 
 export function clearToken() {
   if (typeof window === 'undefined') return;
-  localStorage.removeItem('dashboard_token');
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(USERNAME_KEY);
+  emitAuthChange();
 }
 
 export async function apiFetch(path, options = {}) {
@@ -29,7 +49,20 @@ export async function apiFetch(path, options = {}) {
 
   if (!res.ok) {
     const txt = await res.text();
-    throw new Error(txt || `Request failed: ${res.status}`);
+    let message = txt;
+
+    try {
+      const parsed = JSON.parse(txt);
+      message = parsed?.detail || parsed?.message || txt;
+    } catch (_) {
+      // keep raw text when response is not JSON
+    }
+
+    if (res.status === 401 || res.status === 403) {
+      message = `Permission denied: ${message || 'You do not have enough permissions.'}`;
+    }
+
+    throw new Error(message || `Request failed: ${res.status}`);
   }
   return res.json();
 }

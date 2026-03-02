@@ -53,7 +53,10 @@ export default function AgentsPage() {
   }
 
   async function deleteAgent(id) {
-    if (!isAdmin) return;
+    if (!isAdmin) {
+      setError('You do not have permission to delete agents. Please login as admin.');
+      return;
+    }
     try {
       await apiFetch(`/agents/${id}`, { method: 'DELETE' });
       await loadAgents();
@@ -67,21 +70,24 @@ export default function AgentsPage() {
       <section className="card">
         <h2 style={{ marginTop: 0 }}>Agent Management</h2>
         <p className="subtitle">Admins can create, update, and delete available agents.</p>
+        {!isAdmin && <p className="message-error">Your account is read-only on this page. Please login as admin to manage agents.</p>}
       </section>
 
-      <form className="card" onSubmit={submitForm} style={{ display: 'grid', gap: 10, maxWidth: 760 }}>
-        <h3 style={{ marginTop: 0 }}>{editingId ? 'Edit agent' : 'Create agent'}</h3>
-        <input className="input" placeholder="Agent name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
-        <textarea className="textarea" placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
-        <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <input type="checkbox" checked={form.is_active} onChange={(e) => setForm({ ...form, is_active: e.target.checked })} />
-          Active
-        </label>
-        <div className="controls">
-          <button className="btn" type="submit" disabled={!isAdmin}>{editingId ? 'Update' : 'Create'}</button>
-          {editingId && <button type="button" className="btn btn-secondary" onClick={() => { setEditingId(null); setForm(emptyForm); }}>Cancel</button>}
-        </div>
-      </form>
+      {isAdmin && (
+        <form className="card" onSubmit={submitForm} style={{ display: 'grid', gap: 10, maxWidth: 760 }}>
+          <h3 style={{ marginTop: 0 }}>{editingId ? 'Edit agent' : 'Create agent'}</h3>
+          <input className="input" placeholder="Agent name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+          <textarea className="textarea" placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+          <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <input type="checkbox" checked={form.is_active} onChange={(e) => setForm({ ...form, is_active: e.target.checked })} />
+            Active
+          </label>
+          <div className="controls">
+            <button className="btn" type="submit">{editingId ? 'Update' : 'Create'}</button>
+            {editingId && <button type="button" className="btn btn-secondary" onClick={() => { setEditingId(null); setForm(emptyForm); }}>Cancel</button>}
+          </div>
+        </form>
+      )}
 
       {error && <p className="message-error">{error}</p>}
 
@@ -92,10 +98,22 @@ export default function AgentsPage() {
             <article key={agent.id} className="ticket" style={{ display: 'grid', gap: 6 }}>
               <div className="ticket-title">{agent.name}</div>
               <div className="ticket-meta">{agent.is_active ? 'Active' : 'Inactive'}</div>
-              {agent.description && <div>{agent.description}</div>}
+              {agent.description && <div style={{ whiteSpace: 'pre-wrap' }}>{agent.description}</div>}
               <div className="controls">
-                <button className="btn btn-secondary" onClick={() => { setEditingId(agent.id); setForm({ name: agent.name, description: agent.description || '', is_active: agent.is_active }); }} disabled={!isAdmin}>Edit</button>
-                <button className="btn btn-danger" onClick={() => deleteAgent(agent.id)} disabled={!isAdmin}>Delete</button>
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    if (!isAdmin) {
+                      setError('You do not have permission to edit agents. Please login as admin.');
+                      return;
+                    }
+                    setEditingId(agent.id);
+                    setForm({ name: agent.name, description: agent.description || '', is_active: agent.is_active });
+                  }}
+                >
+                  Edit
+                </button>
+                <button className="btn btn-danger" onClick={() => deleteAgent(agent.id)}>Delete</button>
               </div>
             </article>
           ))}
