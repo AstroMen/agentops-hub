@@ -58,6 +58,9 @@ npm install
 npm run dev
 ```
 
+<img width="1274" height="827" alt="image" src="https://github.com/user-attachments/assets/b4dba5dd-99df-4064-86fb-cc665564eb4a" />
+
+
 ## INSTALL / RBAC docs
 - 详细安装：`docs/INSTALL.md`
 - 权限说明：`docs/RBAC.md`
