@@ -16,12 +16,9 @@ depends_on = None
 
 
 def upgrade() -> None:
-    ticket_status = postgresql.ENUM(
-        'PENDING_APPROVAL', 'APPROVED', 'REJECTED', 'QUEUED', 'RUNNING', 'DONE', 'FAILED',
-        name='ticketstatus'
-    )
-    ticket_priority = postgresql.ENUM('P0', 'P1', 'P2', 'P3', name='ticketpriority')
-    run_status = postgresql.ENUM('RUNNING', 'DONE', 'FAILED', name='runstatus')
+    ticket_status = sa.Enum('PENDING_APPROVAL', 'APPROVED', 'REJECTED', 'QUEUED', 'RUNNING', 'DONE', 'FAILED', name='ticketstatus', native_enum=False)
+    ticket_priority = sa.Enum('P0', 'P1', 'P2', 'P3', name='ticketpriority', native_enum=False)
+    run_status = sa.Enum('RUNNING', 'DONE', 'FAILED', name='runstatus', native_enum=False)
     ticket_status.create(op.get_bind(), checkfirst=True)
     ticket_priority.create(op.get_bind(), checkfirst=True)
     run_status.create(op.get_bind(), checkfirst=True)
@@ -62,8 +59,8 @@ def upgrade() -> None:
         sa.Column('title', sa.String(length=255), nullable=False),
         sa.Column('description', sa.Text(), nullable=False),
         sa.Column('type', sa.String(length=50), nullable=False),
-        sa.Column('status', postgresql.ENUM(name='ticketstatus', create_type=False), nullable=False),
-        sa.Column('priority', postgresql.ENUM(name='ticketpriority', create_type=False), nullable=False),
+        sa.Column('status', ticket_status, nullable=False),
+        sa.Column('priority', ticket_priority, nullable=False),
         sa.Column('created_by', sa.Integer(), sa.ForeignKey('users.id'), nullable=False),
         sa.Column('assigned_agent', sa.String(length=120), nullable=False),
         sa.Column('approved_by', sa.Integer(), sa.ForeignKey('users.id'), nullable=True),
@@ -78,7 +75,7 @@ def upgrade() -> None:
     op.create_table('runs',
         sa.Column('id', sa.Integer(), primary_key=True),
         sa.Column('ticket_id', sa.Integer(), sa.ForeignKey('tickets.id', ondelete='CASCADE'), nullable=False),
-        sa.Column('status', postgresql.ENUM(name='runstatus', create_type=False), nullable=False),
+        sa.Column('status', run_status, nullable=False),
         sa.Column('started_at', sa.DateTime(timezone=True), nullable=False, server_default=sa.text('now()')),
         sa.Column('finished_at', sa.DateTime(timezone=True), nullable=True),
         sa.Column('logs_url', sa.String(length=500), nullable=True),
@@ -106,6 +103,6 @@ def downgrade() -> None:
     op.drop_table('roles')
     op.drop_index('ix_users_email', table_name='users')
     op.drop_table('users')
-    postgresql.ENUM(name='runstatus').drop(op.get_bind(), checkfirst=True)
-    postgresql.ENUM(name='ticketpriority').drop(op.get_bind(), checkfirst=True)
-    postgresql.ENUM(name='ticketstatus').drop(op.get_bind(), checkfirst=True)
+    sa.Enum(name='runstatus', native_enum=False).drop(op.get_bind())
+    sa.Enum(name='ticketpriority', native_enum=False).drop(op.get_bind())
+    sa.Enum(name='ticketstatus', native_enum=False).drop(op.get_bind())
