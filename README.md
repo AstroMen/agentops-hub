@@ -113,26 +113,65 @@ curl -H "Authorization: Bearer member-dev-token" http://localhost:8000/tickets
 curl -X POST -H "Authorization: Bearer admin-dev-token" http://localhost:8000/tickets/1/approve
 ```
 
+<img width="1274" height="827" alt="image" src="https://github.com/user-attachments/assets/b4dba5dd-99df-4064-86fb-cc665564eb4a" />
+
+## 权限与 Token 业务逻辑（Dashboard Web + API）
+
+### 1) 后端鉴权是唯一权限来源
+- API 只认 `Authorization: Bearer <token>`。
+- `ADMIN_TOKEN` 映射为 Admin，`MEMBER_TOKEN` 映射为 Member。
+- 前端页面上的「是否可操作」仅用于 UX 提示；真正权限由后端 `401/403` 决定。
+
+### 2) 前端登录与本地状态
+- 登录页内置两组开发账号：`admin/admin` 与 `member/member`。
+- 登录成功后，前端会把 token 和 username 写入 `localStorage`：
+  - `dashboard_token`
+  - `dashboard_username`
+- 页面判断是否 Admin 时，优先使用 `dashboard_username`（避免仅靠 token 字符串比较带来的误判）；如果 username 缺失，再回退到 token 对比。
+
+### 3) `NEXT_PUBLIC_MEMBER_TOKEN` 的配置要点
+- `NEXT_PUBLIC_*` 变量会暴露到浏览器，只应放开发/演示 token。
+- 若后端改了 `MEMBER_TOKEN`，前端也必须同步 `NEXT_PUBLIC_MEMBER_TOKEN`，否则 member 登录会拿到错误 token 并返回 `401 Invalid token`。
+- 默认开发值：
+  - Admin: `admin-dev-token`
+  - Member: `member-dev-token`
+
+### 4) 推荐的本地联调检查
+```bash
+curl -H "Authorization: Bearer ${ADMIN_TOKEN:-admin-dev-token}" http://localhost:8000/tickets
+curl -H "Authorization: Bearer ${MEMBER_TOKEN:-member-dev-token}" http://localhost:8000/tickets
+```
+
+## INSTALL / RBAC docs
+- 详细安装：`docs/INSTALL.md`
+- 权限说明：`docs/RBAC.md`
+
 ## Troubleshooting
 
 ### Restart services
+The script stops existing services first, so it can be used directly for restart:
 ```bash
 ./scripts/start_dev.sh
 ```
 
-### Manual restart
+### Restart services manually
 ```bash
 # Stop existing processes
 pkill -f "uvicorn src.main:app" && pkill -f "next dev"
 
-# Start again
+# Start services
 cd apps/dashboard_api && python3 -m uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload &
 cd apps/dashboard_web && npm run dev &
 ```
 
 ### View API logs
 ```bash
+# Check log file
 tail -f /tmp/api.log
+
+# Or use the process tool
+process action=list
+process action=log sessionId=<session-id>
 ```
 
 ### View Web logs
@@ -141,6 +180,6 @@ tail -f /tmp/web.log
 ```
 
 ### Common issues
-- **404 Not Found**: restart API and ensure routes are loaded.
-- **401 Unauthorized**: verify token values (`admin-dev-token` / `member-dev-token`).
-- **Database connection failed**: verify PostgreSQL container is running (`docker ps`).
+- **404 Not Found**: Check whether API has restarted and whether new routes are loaded (run `./scripts/start_dev.sh` to restart).
+- **401 Unauthorized**: Check whether the token is correct (default: `admin-dev-token` / `member-dev-token`).
+- **Database connection failed**: Confirm PostgreSQL container is running with `docker ps`.

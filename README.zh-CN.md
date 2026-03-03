@@ -56,6 +56,7 @@ curl -H "Authorization: Bearer ${MEMBER_TOKEN:-member-dev-token}" http://localho
 
 ### 方式 1：使用启动脚本（推荐）
 ```bash
+# 同时启动 API 和 Web 服务
 ./scripts/start_dev.sh
 ```
 
@@ -126,13 +127,22 @@ cd apps/dashboard_api && python3 -m uvicorn src.main:app --host 0.0.0.0 --port 8
 cd apps/dashboard_web && npm run dev &
 ```
 
-### 查看日志
+### 查看 API 日志
 ```bash
+# 查看日志文件
 tail -f /tmp/api.log
+
+# 或使用 process 工具
+process action=list
+process action=log sessionId=<session-id>
+```
+
+### 查看 Web 日志
+```bash
 tail -f /tmp/web.log
 ```
 
 ### 常见问题
-- **404 Not Found**：重启 API 并确认新路由已加载。
-- **401 Unauthorized**：确认 token（`admin-dev-token` / `member-dev-token`）一致。
-- **数据库连接失败**：确认 PostgreSQL 容器运行中（`docker ps`）。
+- **404 Not Found**: 检查 API 是否重启，新路由是否加载（运行 `./scripts/start_dev.sh` 重启）
+- **401 Unauthorized**: 检查 token 是否正确（默认: `admin-dev-token` / `member-dev-token`）
+- **数据库连接失败**: 确认 PostgreSQL 容器运行中 `docker ps`
