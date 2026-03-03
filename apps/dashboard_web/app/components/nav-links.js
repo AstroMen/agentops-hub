@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { clearToken, getToken, getUsername } from '../../lib/api';
 
@@ -47,14 +48,14 @@ export default function NavLinks() {
         const isActive = pathname === link.href;
 
         return (
-          <a
+          <Link
             key={link.href}
             className={`nav-link${isActive ? ' nav-link-active' : ''}`}
             href={link.href}
             aria-current={isActive ? 'page' : undefined}
           >
             {link.label}
-          </a>
+          </Link>
         );
       })}
       {authState.ready && authState.isLoggedIn && <span className="subtitle" style={{ marginLeft: 8 }}>Hi, {authState.username || 'User'}</span>}
