@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { apiFetch, getToken } from '../../lib/api';
+import { apiFetch, getRole, getToken } from '../../lib/api';
 
 const emptyForm = { name: '', description: '', is_active: true };
 
@@ -15,10 +15,9 @@ export default function AgentsPage() {
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    // Check admin status on client side only
     const token = getToken();
-    setIsAdmin(token === (process.env.NEXT_PUBLIC_ADMIN_TOKEN || 'admin-dev-token'));
-    
+    setIsAdmin(getRole() === 'admin');
+
     if (!token) {
       router.push('/login');
       return;
