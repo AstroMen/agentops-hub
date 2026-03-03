@@ -17,6 +17,7 @@ class TicketOut(BaseModel):
     status: TicketStatus
     priority: TicketPriority
     created_by: int
+    project_id: int
     assigned_agent: str
     approved_by: int | None
     approved_at: datetime | None
@@ -33,6 +34,7 @@ class TicketCreate(BaseModel):
     description: str
     type: TicketType
     priority: TicketPriority = TicketPriority.P2
+    project_id: int
     assigned_agent: str = 'dashboard-dev'
     metadata_json: dict | None = None
 
@@ -42,6 +44,7 @@ class TicketUpdate(BaseModel):
     description: str
     type: TicketType
     priority: TicketPriority
+    project_id: int
     assigned_agent: str
     metadata_json: dict | None = None
 
@@ -96,6 +99,27 @@ class AgentCreate(BaseModel):
 
 
 class AgentUpdate(BaseModel):
+    name: str
+    description: str | None = None
+    is_active: bool
+
+
+class ProjectOut(BaseModel):
+    id: int
+    name: str
+    description: str | None = None
+    is_active: bool
+
+    model_config = {'from_attributes': True}
+
+
+class ProjectCreate(BaseModel):
+    name: str
+    description: str | None = None
+    is_active: bool = True
+
+
+class ProjectUpdate(BaseModel):
     name: str
     description: str | None = None
     is_active: bool

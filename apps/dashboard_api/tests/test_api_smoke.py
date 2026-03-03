@@ -2,12 +2,13 @@ import pytest
 from fastapi import HTTPException
 
 from src.api.agents import create_agent
+from src.api.projects import create_project
 from src.api.runs import finish_run, run_next
 from src.api.tickets import approve_ticket, create_ticket, get_ticket, queue_ticket, update_ticket
 from src.core.auth import CurrentUser, require_admin
 from src.main import health
 from src.models import TicketStatus
-from src.schemas.common import AgentCreate, RunFinishPayload, TicketCreate, TicketUpdate
+from src.schemas.common import AgentCreate, ProjectCreate, RunFinishPayload, TicketCreate, TicketUpdate
 
 ADMIN = CurrentUser(id=1, role='Admin')
 MEMBER = CurrentUser(id=2, role='Member')
@@ -16,12 +17,14 @@ OTHER_MEMBER = CurrentUser(id=3, role='Member')
 
 def create_base_ticket(db_session):
     create_agent(AgentCreate(name='agent-alpha', description='demo', is_active=True), db_session, ADMIN)
+    project = create_project(ProjectCreate(name='project-alpha', description='demo', is_active=True), db_session, ADMIN)
     return create_ticket(
         TicketCreate(
             title='Smoke test ticket',
             description='Validate major workflow',
             type='Bug',
             priority='P1',
+            project_id=project.id,
             assigned_agent='agent-alpha',
             metadata_json={'source': 'test'},
         ),
@@ -78,6 +81,7 @@ def test_member_cannot_update_others_ticket(db_session):
                 description='changed',
                 type='Task',
                 priority='P2',
+                project_id=ticket.project_id,
                 assigned_agent='agent-alpha',
                 metadata_json={'changed': True},
             ),

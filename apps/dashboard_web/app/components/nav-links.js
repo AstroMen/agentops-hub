@@ -9,6 +9,7 @@ const links = [
   { href: '/tickets', label: 'Tickets' },
   { href: '/runs', label: 'Runs' },
   { href: '/agents', label: 'Agents' },
+  { href: '/projects', label: 'Projects' },
 ];
 
 export default function NavLinks() {
