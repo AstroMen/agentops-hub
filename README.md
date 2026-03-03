@@ -15,7 +15,7 @@ A reusable dashboard framework that includes:
 
 ### Option 1: Use start script (recommended)
 ```bash
-# Start both API and Web services
+# One command starts DB bootstrap + API + Web
 ./scripts/start_dev.sh
 ```
 
@@ -38,11 +38,9 @@ pip install -r requirements.txt
 cp .env.example .env
 ```
 
-3. Run migrations and seed RBAC data
+3. Run bootstrap (DB wait + migrations + seed)
 ```bash
-cd apps/dashboard_api
-PYTHONPATH=. alembic upgrade head
-PYTHONPATH=. python -m src.seed
+./scripts/dev_bootstrap.sh
 ```
 
 4. Start API
@@ -75,7 +73,7 @@ curl -X POST -H "Authorization: Bearer admin-dev-token" http://localhost:8000/ti
 ## Troubleshooting
 
 ### Restart services
-The script stops existing services first, so it can be used directly for restart:
+The script handles DB bootstrap and starts API/Web in one command. Use it to restart local dev stack:
 ```bash
 ./scripts/start_dev.sh
 ```
@@ -93,7 +91,7 @@ cd apps/dashboard_web && npm run dev &
 ### View API logs
 ```bash
 # Check log file
-tail -f /tmp/api.log
+tail -f /tmp/agentops_api.log
 
 # Or use the process tool
 process action=list
@@ -102,7 +100,7 @@ process action=log sessionId=<session-id>
 
 ### View Web logs
 ```bash
-tail -f /tmp/web.log
+tail -f /tmp/agentops_web.log
 ```
 
 ### Common issues
