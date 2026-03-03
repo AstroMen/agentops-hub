@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { apiFetch, getToken } from '../../lib/api';
+import { apiFetch, getRole, getToken } from '../../lib/api';
 
 const columns = ['PENDING_APPROVAL', 'APPROVED', 'QUEUED', 'RUNNING', 'DONE', 'FAILED'];
 
@@ -12,8 +12,8 @@ const TICKET_TYPES = ['Bug', 'Improvement', 'Documentation Needed', 'Task', 'New
 const defaultForm = {
   title: '',
   description: '',
-  type: 'Task',
-  priority: 'P2',
+  type: '',
+  priority: '',
   assigned_agent: '',
 };
 
@@ -24,8 +24,8 @@ export default function TicketsPage() {
   const [form, setForm] = useState(defaultForm);
   const [formMessage, setFormMessage] = useState('');
   const [agents, setAgents] = useState([]);
-
-  const isAdmin = getToken() === (process.env.NEXT_PUBLIC_ADMIN_TOKEN || 'admin-dev-token');
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [authReady, setAuthReady] = useState(false);
 
   async function loadAgents() {
     const data = await apiFetch('/agents');
@@ -49,10 +49,15 @@ export default function TicketsPage() {
 
   async function createTicket(e) {
     e.preventDefault();
+    if (!form.type || !form.priority || !form.assigned_agent) {
+      setFormMessage('Create failed: Please select type, priority, and agent.');
+      return;
+    }
+
     try {
       setFormMessage('');
       await apiFetch('/tickets', { method: 'POST', body: JSON.stringify(form) });
-      setForm({ ...defaultForm, assigned_agent: agents[0]?.name || '' });
+      setForm(defaultForm);
       setFormMessage('Ticket created');
       await loadTickets();
     } catch (err) {
@@ -62,19 +67,15 @@ export default function TicketsPage() {
 
   useEffect(() => {
     const t = getToken();
+    setIsAdmin(getRole() === 'admin');
+    setAuthReady(true);
+
     if (!t) {
       router.push('/login');
       return;
     }
     Promise.all([loadTickets(), loadAgents()]);
   }, [router]);
-
-  useEffect(() => {
-    if (!form.assigned_agent && agents.length > 0) {
-      setForm((prev) => ({ ...prev, assigned_agent: agents[0].name }));
-    }
-  }, [agents, form.assigned_agent]);
-
   const grouped = useMemo(() => {
     const g = Object.fromEntries(columns.map((c) => [c, []]));
     tickets.forEach((t) => g[t.status]?.push(t));
@@ -86,23 +87,25 @@ export default function TicketsPage() {
       <section className="card">
         <h2 style={{ marginTop: 0 }}>Tickets Board</h2>
         <p className="subtitle">Create tickets and move them through status transitions.</p>
-        {!isAdmin && <p className="message-error">You do not have permission to create tickets with this account.</p>}
+        {authReady && !isAdmin && <p className="message-error">You do not have permission to create tickets with this account.</p>}
         <div className="controls" style={{ marginTop: '.5rem' }}>
           <button className="btn" onClick={loadTickets}>Refresh</button>
         </div>
       </section>
 
-      {isAdmin && (
+      {authReady && isAdmin && (
         <form className="card" onSubmit={createTicket}>
           <h3 style={{ marginTop: 0 }}>Create ticket</h3>
           <div style={{ display: 'grid', gap: 10, maxWidth: 820 }}>
             <input className="input" placeholder="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
             <textarea className="textarea" placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} required />
             <div style={{ display: 'grid', gap: 8, gridTemplateColumns: 'repeat(3, minmax(160px, 1fr))' }}>
-              <select className="select" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
+              <select className="select" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} required>
+                <option value="">Select type</option>
                 {TICKET_TYPES.map((typeOption) => <option key={typeOption} value={typeOption}>{typeOption}</option>)}
               </select>
-              <select className="select" value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })}>
+              <select className="select" value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })} required>
+                <option value="">Select priority</option>
                 <option value="P0">P0</option>
                 <option value="P1">P1</option>
                 <option value="P2">P2</option>
@@ -130,10 +133,10 @@ export default function TicketsPage() {
               <article key={t.id} className="ticket">
                 <div className="ticket-title">#{t.id} {t.title}</div>
                 <div className="ticket-meta">{t.type} / {t.priority}</div>
-                {(isAdmin || t.status === 'PENDING_APPROVAL') && (
+                {((authReady && isAdmin) || t.status === 'PENDING_APPROVAL') && (
                   <Link className="ticket-edit-link" href={`/tickets/${t.id}`}>Edit</Link>
                 )}
-                {isAdmin && (
+                {authReady && isAdmin && (
                   <div className="controls" style={{ marginTop: 8 }}>
                     {t.status === 'PENDING_APPROVAL' && (
                       <>

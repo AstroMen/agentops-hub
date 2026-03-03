@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { clearToken, getToken, getUsername } from '../../lib/api';
 
@@ -13,13 +14,19 @@ const links = [
 export default function NavLinks() {
   const router = useRouter();
   const pathname = usePathname();
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [username, setUsername] = useState('');
+  const [authState, setAuthState] = useState({
+    ready: false,
+    isLoggedIn: false,
+    username: '',
+  });
 
   useEffect(() => {
     function syncAuthStatus() {
-      setIsLoggedIn(Boolean(getToken()));
-      setUsername(getUsername());
+      setAuthState({
+        ready: true,
+        isLoggedIn: Boolean(getToken()),
+        username: getUsername(),
+      });
     }
 
     syncAuthStatus();
@@ -31,7 +38,9 @@ export default function NavLinks() {
     };
   }, []);
 
-  const navItems = isLoggedIn ? links : [...links, { href: '/login', label: 'Login' }];
+  const navItems = authState.ready && !authState.isLoggedIn
+    ? [...links, { href: '/login', label: 'Login' }]
+    : links;
 
   return (
     <nav className="nav-links" aria-label="Primary navigation">
@@ -39,18 +48,18 @@ export default function NavLinks() {
         const isActive = pathname === link.href;
 
         return (
-          <a
+          <Link
             key={link.href}
             className={`nav-link${isActive ? ' nav-link-active' : ''}`}
             href={link.href}
             aria-current={isActive ? 'page' : undefined}
           >
             {link.label}
-          </a>
+          </Link>
         );
       })}
-      {isLoggedIn && <span className="subtitle" style={{ marginLeft: 8 }}>Hi, {username || 'User'}</span>}
-      {isLoggedIn && (
+      {authState.ready && authState.isLoggedIn && <span className="subtitle" style={{ marginLeft: 8 }}>Hi, {authState.username || 'User'}</span>}
+      {authState.ready && authState.isLoggedIn && (
         <button
           type="button"
           className="btn btn-secondary"
