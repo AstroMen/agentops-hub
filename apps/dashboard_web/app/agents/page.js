@@ -13,10 +13,12 @@ export default function AgentsPage() {
   const [editingId, setEditingId] = useState(null);
   const [error, setError] = useState('');
   const [isAdmin, setIsAdmin] = useState(false);
+  const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
     const token = getToken();
     setIsAdmin(getRole() === 'admin');
+    setAuthReady(true);
 
     if (!token) {
       router.push('/login');
@@ -69,10 +71,10 @@ export default function AgentsPage() {
       <section className="card">
         <h2 style={{ marginTop: 0 }}>Agent Management</h2>
         <p className="subtitle">Admins can create, update, and delete available agents.</p>
-        {!isAdmin && <p className="message-error">Your account is read-only on this page. Please login as admin to manage agents.</p>}
+        {authReady && !isAdmin && <p className="message-error">Your account is read-only on this page. Please login as admin to manage agents.</p>}
       </section>
 
-      {isAdmin && (
+      {authReady && isAdmin && (
         <form className="card" onSubmit={submitForm} style={{ display: 'grid', gap: 10, maxWidth: 760 }}>
           <h3 style={{ marginTop: 0 }}>{editingId ? 'Edit agent' : 'Create agent'}</h3>
           <input className="input" placeholder="Agent name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
