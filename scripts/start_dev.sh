@@ -7,6 +7,37 @@ source "$SCRIPT_DIR/lib.sh"
 
 API_PID=""
 WEB_PID=""
+DETACH_MODE="false"
+API_LOG_FILE="/tmp/agentops_api.log"
+WEB_LOG_FILE="/tmp/agentops_web.log"
+API_PID_FILE="/tmp/agentops_api.pid"
+WEB_PID_FILE="/tmp/agentops_web.pid"
+
+usage() {
+  cat <<'EOF'
+Usage: ./scripts/start_dev.sh [--detach]
+
+Options:
+  -d, --detach    Start services in the background and exit.
+  -h, --help      Show this help message.
+EOF
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -d|--detach)
+      DETACH_MODE="true"
+      shift
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      fail "Unknown argument: $1"
+      ;;
+  esac
+done
 
 cleanup() {
   log_info "Shutting down local dev services..."
@@ -20,7 +51,9 @@ cleanup() {
   log_success "All child processes stopped."
 }
 
-trap cleanup EXIT INT TERM
+if [[ "$DETACH_MODE" != "true" ]]; then
+  trap cleanup EXIT INT TERM
+fi
 
 cd "$PROJECT_ROOT"
 
@@ -47,12 +80,13 @@ log_info "Starting dashboard_api (FastAPI)..."
 (
   cd apps/dashboard_api
   PYTHONPATH=. python3 -m uvicorn src.main:app --host 0.0.0.0 --port 8000
-) > /tmp/agentops_api.log 2>&1 &
+) > "$API_LOG_FILE" 2>&1 &
 API_PID=$!
+echo "$API_PID" > "$API_PID_FILE"
 
 if ! wait_for_http "http://localhost:8000/health" 30; then
   log_error "API failed health check. Last logs:"
-  tail -n 50 /tmp/agentops_api.log || true
+  tail -n 50 "$API_LOG_FILE" || true
   fail "Unable to start dashboard_api."
 fi
 log_success "dashboard_api is running at http://localhost:8000"
@@ -61,15 +95,28 @@ log_info "Starting dashboard_web (Next.js)..."
 (
   cd apps/dashboard_web
   npm run dev
-) > /tmp/agentops_web.log 2>&1 &
+) > "$WEB_LOG_FILE" 2>&1 &
 WEB_PID=$!
+echo "$WEB_PID" > "$WEB_PID_FILE"
 
 if ! wait_for_http "http://localhost:3000" 45; then
   log_error "Web failed health check. Last logs:"
-  tail -n 50 /tmp/agentops_web.log || true
+  tail -n 50 "$WEB_LOG_FILE" || true
   fail "Unable to start dashboard_web."
 fi
 log_success "dashboard_web is running at http://localhost:3000"
+
+if [[ "$DETACH_MODE" == "true" ]]; then
+  disown "$API_PID" "$WEB_PID" 2>/dev/null || true
+  log_success "Dev stack is ready and running in background."
+  log_info "API PID: $API_PID (saved to $API_PID_FILE)"
+  log_info "Web PID: $WEB_PID (saved to $WEB_PID_FILE)"
+  log_info "API log: $API_LOG_FILE"
+  log_info "Web log: $WEB_LOG_FILE"
+  log_info "Tail logs: tail -f $API_LOG_FILE $WEB_LOG_FILE"
+  log_info "Stop services: kill \$(cat $API_PID_FILE) \$(cat $WEB_PID_FILE)"
+  exit 0
+fi
 
 log_success "Dev stack is ready. Press Ctrl+C to stop both services."
 wait "$API_PID" "$WEB_PID"
