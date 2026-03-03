@@ -97,6 +97,27 @@ npm install
 npm run dev
 ```
 
+
+## CI (GitHub Actions)
+
+A concise CI pipeline is provided at `.github/workflows/ci.yml`:
+- **api-tests**: installs Python dependencies and runs API smoke tests (`pytest`).
+- **web-build**: installs Node dependencies and runs `next build` to verify web service health.
+
+Trigger strategy:
+- `pull_request`: run checks before merge.
+- `push` to `main`: run checks after each merge.
+- `workflow_dispatch`: allow manual reruns when needed.
+
+Reliability tweaks:
+- **concurrency cancellation**: automatically cancels outdated runs on the same ref.
+- **timeout guards**: each job has a 10-minute timeout.
+
+Run API tests locally:
+```bash
+PYTHONPATH=apps/dashboard_api pytest -q apps/dashboard_api/tests
+```
+
 ## Chinese README
 - 中文说明请查看：`README.zh-CN.md`
 
