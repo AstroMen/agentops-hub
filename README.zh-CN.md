@@ -56,7 +56,7 @@ curl -H "Authorization: Bearer ${MEMBER_TOKEN:-member-dev-token}" http://localho
 
 ### 方式 1：使用启动脚本（推荐）
 ```bash
-# 同时启动 API 和 Web 服务
+# 一条命令完成 DB bootstrap + API + Web 启动
 ./scripts/start_dev.sh
 ```
 
@@ -79,11 +79,9 @@ pip install -r requirements.txt
 cp .env.example .env
 ```
 
-3. 执行迁移 + RBAC seed
+3. 执行 bootstrap（等待 DB + 迁移 + seed）
 ```bash
-cd apps/dashboard_api
-PYTHONPATH=. alembic upgrade head
-PYTHONPATH=. python -m src.seed
+./scripts/dev_bootstrap.sh
 ```
 
 4. 启动 API
@@ -116,6 +114,7 @@ curl -X POST -H "Authorization: Bearer admin-dev-token" http://localhost:8000/ti
 ## 故障排查
 
 ### 重启服务
+脚本会自动做 DB bootstrap 并启动 API/Web，可直接用于重启：
 ```bash
 ./scripts/start_dev.sh
 ```
@@ -130,7 +129,7 @@ cd apps/dashboard_web && npm run dev &
 ### 查看 API 日志
 ```bash
 # 查看日志文件
-tail -f /tmp/api.log
+tail -f /tmp/agentops_api.log
 
 # 或使用 process 工具
 process action=list
@@ -139,7 +138,7 @@ process action=log sessionId=<session-id>
 
 ### 查看 Web 日志
 ```bash
-tail -f /tmp/web.log
+tail -f /tmp/agentops_web.log
 ```
 
 ### 常见问题
