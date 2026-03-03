@@ -1,77 +1,93 @@
 # AgentOps Dashboard Framework v0.1
 
-一个可复用的 Dashboard Framework，覆盖：
-- Tickets 模块进度展示
-- Agent runs/artifacts 展示
-- 审批闸门 + 审计日志
-- RBAC（Admin/Member）
+一个可复用的全栈 Dashboard 框架，用于工单流程管理、执行记录追踪、审计日志与角色权限控制。
+
+## 包含内容
+
+- **Dashboard API**：基于 FastAPI + SQLAlchemy + Alembic。
+- **Dashboard Web**：基于 Next.js App Router。
+- **本地基础设施**：通过 Docker Compose 启动 PostgreSQL。
+- **开发脚本**：提供 bootstrap、seed、一键启动等能力。
 
 ## 仓库结构
-- `apps/dashboard_api/`: FastAPI + SQLAlchemy + Alembic
-- `apps/dashboard_web/`: Next.js 看板 UI
-- `infra/docker-compose.yml`: 本地开发 Postgres
 
-## 业务逻辑总览
+- `apps/dashboard_api/` —— 后端服务。
+- `apps/dashboard_web/` —— 前端服务。
+- `infra/docker-compose.yml` —— 本地 PostgreSQL。
+- `scripts/` —— 开发辅助脚本。
+- `docs/` —— 安装与 RBAC 文档。
+
+## 核心业务流程
 
 ### Tickets（工单）
-- 工单创建时包含 `type`、`priority`、`assigned_agent` 等字段，默认进入 `PENDING_APPROVAL`。
-- Member/Admin 都可查看工单；Admin 负责核心流转动作（`approve/reject/queue`）。
-- 编辑接口（`PUT /tickets/{id}`、`POST /tickets/{id}/update`）由后端做权限和状态校验。
 
-### Runs（执行）
-- Run 表示一次 Agent 执行记录，由 Admin 驱动生命周期。
-- Admin 可发起下一次执行（`POST /runs/next`）并完成执行（`POST /runs/{id}/finish`）。
-- 状态流转必须合法，不合法会返回 `409`。
+- 创建工单时支持 `type`、`priority`、`assigned_agent` 等字段。
+- 新建工单默认状态为 `PENDING_APPROVAL`。
+- 仅 Admin 可执行 approve/reject/queue。
+- `PUT /tickets/{id}` 与 `POST /tickets/{id}/update` 都支持编辑，并有权限校验。
+
+### Runs（执行记录）
+
+- Admin 通过 `POST /runs/next` 从排队工单发起执行。
+- Admin 通过 `POST /runs/{id}/finish` 结束执行，状态仅允许 `DONE` 或 `FAILED`。
+- 工单状态遵循生命周期约束（`QUEUED -> RUNNING -> DONE/FAILED`）。
 
 ### Agents（执行体）
+
 - Agent 作为工单可分配的执行对象。
-- Agent 的增删改查（`/agents`）在 API 层是 Admin-only。
-- 前端会根据角色隐藏/展示管理入口，但最终权限仍以后端鉴权结果为准。
+- `/agents` 的增删改接口均为 Admin-only。
+- 若 Agent 已被工单引用，则禁止删除。
 
-### 权限与 Token 业务逻辑（Dashboard Web + API）
-1. **后端鉴权是唯一权限来源**
-   - API 只认 `Authorization: Bearer <token>`。
-   - `ADMIN_TOKEN` 映射为 Admin，`MEMBER_TOKEN` 映射为 Member。
-   - 前端页面上的「是否可操作」仅用于 UX 提示；真正权限由后端 `401/403` 决定。
+### Audit Logs（审计日志）
 
-2. **前端登录与本地状态**
-   - 登录页内置两组开发账号：`admin/admin` 与 `member/member`。
-   - 登录成功后，前端会写入：
-     - `localStorage.dashboard_token`
-     - `localStorage.dashboard_username`
-   - 页面判定角色时，优先使用 `username`，缺失时再回退到 token 比对。
+- 工单、Agent、Run 的关键操作会写入审计日志。
+- 审计日志查询接口 `GET /audit-logs` 为 Admin-only。
 
-3. **`NEXT_PUBLIC_MEMBER_TOKEN` 的配置要点**
-   - `NEXT_PUBLIC_*` 变量会暴露到浏览器，只应放开发/演示 token。
-   - 若后端 `MEMBER_TOKEN` 变更，前端 `NEXT_PUBLIC_MEMBER_TOKEN` 必须同步更新。
-   - 否则 member 登录后请求会出现 `401 Invalid token`。
+## 鉴权与权限模型
 
-4. **推荐本地联调检查**
-```bash
-curl -H "Authorization: Bearer ${ADMIN_TOKEN:-admin-dev-token}" http://localhost:8000/tickets
-curl -H "Authorization: Bearer ${MEMBER_TOKEN:-member-dev-token}" http://localhost:8000/tickets
-```
+- 后端鉴权是唯一权限来源。
+- API 通过 `Authorization: Bearer <token>` 进行认证。
+- `ADMIN_TOKEN` 对应 Admin，`MEMBER_TOKEN` 对应 Member。
+- 前端的角色显示仅用于交互提示，最终权限以后端返回 `401/403` 为准。
+
+### 前端开发登录
+
+- 内置账号：
+  - `admin / admin`
+  - `member / member`
+- 登录后前端会存储：
+  - `localStorage.dashboard_token`
+  - `localStorage.dashboard_username`
+
+### Token 对齐说明
+
+如果你修改了后端 `.env` 中的 token，前端 `NEXT_PUBLIC_*` token 变量也需要同步更新。
 
 ## 快速开始
 
-### 方式 1：使用启动脚本（推荐）
+### 方式一（推荐）：一键启动
+
 ```bash
-# 一条命令完成 DB bootstrap + API + Web 启动
 ./scripts/start_dev.sh
 ```
 
-服务地址：
-- API: http://localhost:8000
-- Web: http://localhost:3000
+该脚本默认会：
 
-### 方式 2：手动启动
+1. 执行数据库 bootstrap（等待 + 迁移 + seed）。
+2. 检查并安装前端依赖。
+3. 启动 API（`http://localhost:8000`）。
+4. 启动 Web（`http://localhost:3000`）。
 
-1. 启动数据库
+### 方式二：手动启动
+
+1. 启动 PostgreSQL：
+
 ```bash
 docker compose -f infra/docker-compose.yml up -d
 ```
 
-2. 安装 API 依赖并配置环境
+2. 准备 Python 环境：
+
 ```bash
 python -m venv .venv
 source .venv/bin/activate
@@ -79,90 +95,98 @@ pip install -r requirements.txt
 cp .env.example .env
 ```
 
-3. 执行 bootstrap（等待 DB + 迁移 + seed）
+3. 执行数据库 bootstrap + 迁移 + seed：
+
 ```bash
 ./scripts/dev_bootstrap.sh
 ```
 
-4. 启动 API
+4. 启动 API：
+
 ```bash
 cd apps/dashboard_api
 PYTHONPATH=. uvicorn src.main:app --reload --port 8000
 ```
 
-5. 启动 Web
+5. 启动 Web：
+
 ```bash
 cd apps/dashboard_web
 npm install
 npm run dev
 ```
 
+## 环境变量
 
-## CI（GitHub Actions）
+来自 `.env.example`：
 
-仓库已提供简洁 CI：`.github/workflows/ci.yml`：
-- **api-tests**：安装 Python 依赖并执行 API 冒烟测试（`pytest`）。
-- **web-build**：安装 Node 依赖并执行 `next build`，验证前端服务可构建。
+- `DATABASE_URL`
+- `ADMIN_TOKEN`
+- `MEMBER_TOKEN`
+- `NEXT_PUBLIC_API_URL`
+- `NEXT_PUBLIC_ADMIN_TOKEN`
 
-触发策略：
-- `pull_request`：合并前检查。
-- `push` 到 `main`：每次合并后自动运行。
-- `workflow_dispatch`：支持手动触发复检。
+前端同样支持 `NEXT_PUBLIC_MEMBER_TOKEN`（未设置时默认使用 `member-dev-token`）。
 
-稳定性增强：
-- **并发取消**：同一分支新提交会自动取消旧的 CI 任务。
-- **超时保护**：每个 Job 限制为 10 分钟。
+## API 快速检查
+
+```bash
+curl http://localhost:8000/health
+curl -H "Authorization: Bearer member-dev-token" http://localhost:8000/tickets
+curl -H "Authorization: Bearer admin-dev-token" http://localhost:8000/runs
+curl -X POST -H "Authorization: Bearer admin-dev-token" http://localhost:8000/tickets/1/approve
+```
+
+## 测试
 
 本地运行 API 测试：
+
 ```bash
 PYTHONPATH=apps/dashboard_api pytest -q apps/dashboard_api/tests
 ```
 
-## 英文版 README
-- English documentation: `README.md`
+## CI
 
-## 安装与 RBAC 文档
-- 安装说明：`docs/INSTALL.md`
-- 权限说明：`docs/RBAC.md`
+CI 工作流：`.github/workflows/ci.yml`
 
-## API 检查
-```bash
-curl http://localhost:8000/health
-curl -H "Authorization: Bearer member-dev-token" http://localhost:8000/tickets
-curl -X POST -H "Authorization: Bearer admin-dev-token" http://localhost:8000/tickets/1/approve
-```
+- `api-tests`：执行后端测试。
+- `web-build`：执行前端构建检查。
+
+触发方式：
+
+- Pull Request
+- 推送到 `main`
+- 手动触发
 
 ## 故障排查
 
-### 重启服务
-脚本会自动做 DB bootstrap 并启动 API/Web，可直接用于重启：
+### 使用脚本重启
+
 ```bash
 ./scripts/start_dev.sh
 ```
 
-### 手动重启
+### 后台模式启动
+
 ```bash
-pkill -f "uvicorn src.main:app" && pkill -f "next dev"
-cd apps/dashboard_api && python3 -m uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload &
-cd apps/dashboard_web && npm run dev &
+./scripts/start_dev.sh --detach
 ```
 
-### 查看 API 日志
+### 查看日志
+
 ```bash
-# 查看日志文件
 tail -f /tmp/agentops_api.log
-
-# 或使用 process 工具
-process action=list
-process action=log sessionId=<session-id>
-```
-
-### 查看 Web 日志
-```bash
 tail -f /tmp/agentops_web.log
 ```
 
 ### 常见问题
-- **404 Not Found**: 检查 API 是否重启，新路由是否加载（运行 `./scripts/start_dev.sh` 重启）
-- **401 Unauthorized**: 检查 token 是否正确（默认: `admin-dev-token` / `member-dev-token`）
-- **数据库连接失败**: 确认 PostgreSQL 容器运行中 `docker ps`
+
+- **401 Unauthorized**：检查 token 是否正确，及前后端 token 是否一致。
+- **409 Conflict**：检查状态流转是否合法。
+- **数据库连接失败**：确认 PostgreSQL 容器是否运行（`docker ps`）。
+
+## 其他文档
+
+- 英文 README：`README.md`
+- 安装说明：`docs/INSTALL.md`
+- RBAC 说明：`docs/RBAC.md`
