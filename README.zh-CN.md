@@ -99,6 +99,27 @@ npm install
 npm run dev
 ```
 
+
+## CI（GitHub Actions）
+
+仓库已提供简洁 CI：`.github/workflows/ci.yml`：
+- **api-tests**：安装 Python 依赖并执行 API 冒烟测试（`pytest`）。
+- **web-build**：安装 Node 依赖并执行 `next build`，验证前端服务可构建。
+
+触发策略：
+- `pull_request`：合并前检查。
+- `push` 到 `main`：每次合并后自动运行。
+- `workflow_dispatch`：支持手动触发复检。
+
+稳定性增强：
+- **并发取消**：同一分支新提交会自动取消旧的 CI 任务。
+- **超时保护**：每个 Job 限制为 10 分钟。
+
+本地运行 API 测试：
+```bash
+PYTHONPATH=apps/dashboard_api pytest -q apps/dashboard_api/tests
+```
+
 ## 英文版 README
 - English documentation: `README.md`
 

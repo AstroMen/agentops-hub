@@ -109,6 +109,11 @@ A concise CI pipeline is provided at `.github/workflows/ci.yml`:
 Trigger strategy:
 - `pull_request`: run checks before merge.
 - `push` to `main`: run checks after each merge.
+- `workflow_dispatch`: allow manual reruns when needed.
+
+Reliability tweaks:
+- **concurrency cancellation**: automatically cancels outdated runs on the same ref.
+- **timeout guards**: each job has a 10-minute timeout.
 
 Run API tests locally:
 ```bash
