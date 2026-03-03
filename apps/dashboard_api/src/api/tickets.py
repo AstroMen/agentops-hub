@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from src.core.auth import CurrentUser, get_current_user, require_admin
 from src.db.session import get_db
-from src.models import Agent, Ticket, TicketPriority, TicketStatus
+from src.models import Agent, Project, Ticket, TicketPriority, TicketStatus
 from src.schemas.common import ActionPayload, TicketCreate, TicketOut, TicketUpdate
 from src.services.audit import write_audit
 
@@ -19,10 +19,16 @@ def _ensure_agent_exists(db: Session, agent_name: str):
         raise HTTPException(400, 'Assigned agent does not exist or is inactive')
 
 
+def _ensure_project_exists(db: Session, project_id: int):
+    project = db.execute(select(Project).where(Project.id == project_id, Project.is_active.is_(True))).scalar_one_or_none()
+    if not project:
+        raise HTTPException(400, 'Project does not exist or is inactive')
+
 
 @router.post('', response_model=TicketOut)
 def create_ticket(payload: TicketCreate, db: Session = Depends(get_db), user: CurrentUser = Depends(get_current_user)):
     _ensure_agent_exists(db, payload.assigned_agent)
+    _ensure_project_exists(db, payload.project_id)
 
     ticket = Ticket(
         title=payload.title,
@@ -31,11 +37,12 @@ def create_ticket(payload: TicketCreate, db: Session = Depends(get_db), user: Cu
         priority=payload.priority,
         status=TicketStatus.PENDING_APPROVAL,
         created_by=user.id,
+        project_id=payload.project_id,
         assigned_agent=payload.assigned_agent,
         metadata_json=payload.metadata_json,
     )
     db.add(ticket)
-    write_audit(db, user.id, 'TICKET_CREATED', 'ticket', 'new', {'title': payload.title})
+    write_audit(db, user.id, 'TICKET_CREATED', 'ticket', 'new', {'title': payload.title, 'project_id': payload.project_id})
     db.commit()
     db.refresh(ticket)
     return ticket
@@ -46,6 +53,7 @@ def list_tickets(
     status: TicketStatus | None = Query(default=None),
     priority: TicketPriority | None = Query(default=None),
     assigned_agent: str | None = Query(default=None),
+    project_id: int | None = Query(default=None),
     type: str | None = Query(default=None),
     db: Session = Depends(get_db),
     _: CurrentUser = Depends(get_current_user),
@@ -57,6 +65,8 @@ def list_tickets(
         stmt = stmt.where(Ticket.priority == priority)
     if assigned_agent:
         stmt = stmt.where(Ticket.assigned_agent == assigned_agent)
+    if project_id:
+        stmt = stmt.where(Ticket.project_id == project_id)
     if type:
         stmt = stmt.where(Ticket.type == type)
     return list(db.execute(stmt.order_by(Ticket.id.desc())).scalars())
@@ -71,15 +81,17 @@ def update_ticket(ticket_id: int, payload: TicketUpdate, db: Session = Depends(g
     _ensure_update_permission(ticket, user)
 
     _ensure_agent_exists(db, payload.assigned_agent)
+    _ensure_project_exists(db, payload.project_id)
 
     ticket.title = payload.title
     ticket.description = payload.description
     ticket.type = payload.type
     ticket.priority = payload.priority
+    ticket.project_id = payload.project_id
     ticket.assigned_agent = payload.assigned_agent
     ticket.metadata_json = payload.metadata_json
 
-    write_audit(db, user.id, 'TICKET_UPDATED', 'ticket', str(ticket.id), {'title': payload.title})
+    write_audit(db, user.id, 'TICKET_UPDATED', 'ticket', str(ticket.id), {'title': payload.title, 'project_id': payload.project_id})
     db.commit()
     db.refresh(ticket)
     return ticket

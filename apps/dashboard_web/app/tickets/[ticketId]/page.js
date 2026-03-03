@@ -12,6 +12,7 @@ const emptyForm = {
   description: '',
   type: 'Task',
   priority: 'P2',
+  project_id: '',
   assigned_agent: '',
 };
 
@@ -24,6 +25,7 @@ export default function TicketEditPage() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [agents, setAgents] = useState([]);
+  const [projects, setProjects] = useState([]);
 
   useEffect(() => {
     const token = getToken();
@@ -35,14 +37,17 @@ export default function TicketEditPage() {
     async function loadPageData() {
       try {
         setError('');
-        const [ticket, agentList] = await Promise.all([apiFetch(`/tickets/${ticketId}`), apiFetch('/agents')]);
+        const [ticket, agentList, projectList] = await Promise.all([apiFetch(`/tickets/${ticketId}`), apiFetch('/agents'), apiFetch('/projects')]);
         const activeAgents = agentList.filter((agent) => agent.is_active);
+        const activeProjects = projectList.filter((project) => project.is_active);
         setAgents(activeAgents);
+        setProjects(activeProjects);
         setForm({
           title: ticket.title,
           description: ticket.description,
           type: ticket.type,
           priority: ticket.priority,
+          project_id: String(ticket.project_id),
           assigned_agent: ticket.assigned_agent,
         });
       } catch (err) {
@@ -64,7 +69,7 @@ export default function TicketEditPage() {
       setError('');
       await apiFetch(`/tickets/${ticketId}/update`, {
         method: 'POST',
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, project_id: Number(form.project_id) }),
       });
       setMessage('Ticket updated successfully.');
     } catch (err) {
@@ -85,7 +90,7 @@ export default function TicketEditPage() {
         <form onSubmit={handleSubmit} style={{ display: 'grid', gap: 10 }}>
           <input className="input" placeholder="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
           <textarea className="textarea" placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} required />
-          <div style={{ display: 'grid', gap: 8, gridTemplateColumns: 'repeat(3, minmax(160px, 1fr))' }}>
+          <div style={{ display: 'grid', gap: 8, gridTemplateColumns: 'repeat(4, minmax(160px, 1fr))' }}>
             <select className="select" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
               {TICKET_TYPES.map((typeOption) => <option key={typeOption} value={typeOption}>{typeOption}</option>)}
             </select>
@@ -94,6 +99,10 @@ export default function TicketEditPage() {
               <option value="P1">P1</option>
               <option value="P2">P2</option>
               <option value="P3">P3</option>
+            </select>
+            <select className="select" value={form.project_id} onChange={(e) => setForm({ ...form, project_id: e.target.value })} required>
+              <option value="">Select project</option>
+              {projects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}
             </select>
             <select className="select" value={form.assigned_agent} onChange={(e) => setForm({ ...form, assigned_agent: e.target.value })} required>
               <option value="">Select agent</option>

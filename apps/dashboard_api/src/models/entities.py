@@ -84,6 +84,17 @@ class Agent(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
+class Project(Base):
+    __tablename__ = 'projects'
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(120), unique=True, index=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
 class Ticket(Base):
     __tablename__ = 'tickets'
 
@@ -94,6 +105,7 @@ class Ticket(Base):
     status: Mapped[TicketStatus] = mapped_column(Enum(TicketStatus, create_type=False), default=TicketStatus.PENDING_APPROVAL)
     priority: Mapped[TicketPriority] = mapped_column(Enum(TicketPriority, create_type=False), default=TicketPriority.P2)
     created_by: Mapped[int] = mapped_column(ForeignKey('users.id'))
+    project_id: Mapped[int] = mapped_column(ForeignKey('projects.id'))
     assigned_agent: Mapped[str] = mapped_column(String(120), default='dashboard-dev')
     approved_by: Mapped[int | None] = mapped_column(ForeignKey('users.id'), nullable=True)
     approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
@@ -105,6 +117,7 @@ class Ticket(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
 
     runs: Mapped[list['Run']] = relationship(back_populates='ticket')
+    project: Mapped['Project'] = relationship()
 
 
 class Run(Base):
