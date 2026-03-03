@@ -18,11 +18,9 @@ pip install -r requirements.txt
 cp .env.example .env
 ```
 
-## 3) Run migrations + seed
+## 3) Run bootstrap (wait DB + migrations + seed)
 ```bash
-cd apps/dashboard_api
-PYTHONPATH=. alembic upgrade head
-PYTHONPATH=. python -m src.seed
+./scripts/dev_bootstrap.sh
 ```
 
 ## 4) Start API
