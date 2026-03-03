@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { apiFetch, getToken } from '../../lib/api';
+import { apiFetch, getRole, getToken } from '../../lib/api';
 
 const columns = ['PENDING_APPROVAL', 'APPROVED', 'QUEUED', 'RUNNING', 'DONE', 'FAILED'];
 
@@ -24,8 +24,8 @@ export default function TicketsPage() {
   const [form, setForm] = useState(defaultForm);
   const [formMessage, setFormMessage] = useState('');
   const [agents, setAgents] = useState([]);
-
-  const isAdmin = getToken() === (process.env.NEXT_PUBLIC_ADMIN_TOKEN || 'admin-dev-token');
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [authReady, setAuthReady] = useState(false);
 
   async function loadAgents() {
     const data = await apiFetch('/agents');
@@ -62,6 +62,9 @@ export default function TicketsPage() {
 
   useEffect(() => {
     const t = getToken();
+    setIsAdmin(getRole() === 'admin');
+    setAuthReady(true);
+
     if (!t) {
       router.push('/login');
       return;
@@ -86,13 +89,13 @@ export default function TicketsPage() {
       <section className="card">
         <h2 style={{ marginTop: 0 }}>Tickets Board</h2>
         <p className="subtitle">Create tickets and move them through status transitions.</p>
-        {!isAdmin && <p className="message-error">You do not have permission to create tickets with this account.</p>}
+        {authReady && !isAdmin && <p className="message-error">You do not have permission to create tickets with this account.</p>}
         <div className="controls" style={{ marginTop: '.5rem' }}>
           <button className="btn" onClick={loadTickets}>Refresh</button>
         </div>
       </section>
 
-      {isAdmin && (
+      {authReady && isAdmin && (
         <form className="card" onSubmit={createTicket}>
           <h3 style={{ marginTop: 0 }}>Create ticket</h3>
           <div style={{ display: 'grid', gap: 10, maxWidth: 820 }}>
@@ -130,10 +133,10 @@ export default function TicketsPage() {
               <article key={t.id} className="ticket">
                 <div className="ticket-title">#{t.id} {t.title}</div>
                 <div className="ticket-meta">{t.type} / {t.priority}</div>
-                {(isAdmin || t.status === 'PENDING_APPROVAL') && (
+                {((authReady && isAdmin) || t.status === 'PENDING_APPROVAL') && (
                   <Link className="ticket-edit-link" href={`/tickets/${t.id}`}>Edit</Link>
                 )}
-                {isAdmin && (
+                {authReady && isAdmin && (
                   <div className="controls" style={{ marginTop: 8 }}>
                     {t.status === 'PENDING_APPROVAL' && (
                       <>
