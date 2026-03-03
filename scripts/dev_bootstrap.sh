@@ -11,11 +11,13 @@ check_cmd docker "Install Docker Desktop / Docker Engine first."
 check_cmd python3 "Install Python 3.11+ first."
 check_cmd alembic "Install API dependencies (pip install -r requirements.txt)."
 
-log_info "[1/4] Starting Postgres container..."
-if ! docker compose -f infra/docker-compose.yml up -d postgres; then
-  fail "Unable to start Postgres. Run 'docker compose -f infra/docker-compose.yml logs postgres' for details."
+log_info "[1/4] Ensuring Postgres is running..."
+if docker ps --format '{{.Names}}' | grep -Eq '^(agentops_db|agentops-postgres)$'; then
+  log_info "Detected running Postgres container (agentops_db/agentops-postgres); skipping docker compose up."
+elif ! docker compose -f infra/docker-compose.yml up -d postgres; then
+  fail "Unable to start Postgres. If port 5432 is already in use, either stop the conflicting container/process or set DATABASE_URL to the running Postgres instance. For compose logs: 'docker compose -f infra/docker-compose.yml logs postgres'."
 fi
-log_success "Postgres container started."
+log_success "Postgres container is available."
 
 log_info "[2/4] Waiting for database readiness (timeout: 60s)..."
 if ! python3 - <<'PY'
