@@ -52,7 +52,7 @@ export default function TicketsPage() {
     try {
       setFormMessage('');
       await apiFetch('/tickets', { method: 'POST', body: JSON.stringify(form) });
-      setForm({ ...defaultForm, assigned_agent: agents[0]?.name || '' });
+      setForm(defaultForm);
       setFormMessage('Ticket created');
       await loadTickets();
     } catch (err) {
@@ -71,13 +71,6 @@ export default function TicketsPage() {
     }
     Promise.all([loadTickets(), loadAgents()]);
   }, [router]);
-
-  useEffect(() => {
-    if (!form.assigned_agent && agents.length > 0) {
-      setForm((prev) => ({ ...prev, assigned_agent: agents[0].name }));
-    }
-  }, [agents, form.assigned_agent]);
-
   const grouped = useMemo(() => {
     const g = Object.fromEntries(columns.map((c) => [c, []]));
     tickets.forEach((t) => g[t.status]?.push(t));
