@@ -17,6 +17,22 @@ export function getUsername() {
   return localStorage.getItem(USERNAME_KEY) || '';
 }
 
+export function getRole() {
+  const username = getUsername();
+  if (username === 'admin') return 'admin';
+  if (username === 'member') return 'member';
+
+  const token = getToken();
+  if (!token) return '';
+
+  const adminToken = process.env.NEXT_PUBLIC_ADMIN_TOKEN || 'admin-dev-token';
+  const memberToken = process.env.NEXT_PUBLIC_MEMBER_TOKEN || 'member-dev-token';
+
+  if (token === adminToken) return 'admin';
+  if (token === memberToken) return 'member';
+  return '';
+}
+
 export function setToken(token, username = '') {
   if (typeof window === 'undefined') return;
   localStorage.setItem(TOKEN_KEY, token);

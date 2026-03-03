@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { apiFetch, getToken } from '../../lib/api';
+import { apiFetch, getRole, getToken } from '../../lib/api';
 
 const emptyForm = { name: '', description: '', is_active: true };
 
@@ -13,12 +13,13 @@ export default function AgentsPage() {
   const [editingId, setEditingId] = useState(null);
   const [error, setError] = useState('');
   const [isAdmin, setIsAdmin] = useState(false);
+  const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
-    // Check admin status on client side only
     const token = getToken();
-    setIsAdmin(token === (process.env.NEXT_PUBLIC_ADMIN_TOKEN || 'admin-dev-token'));
-    
+    setIsAdmin(getRole() === 'admin');
+    setAuthReady(true);
+
     if (!token) {
       router.push('/login');
       return;
@@ -70,10 +71,10 @@ export default function AgentsPage() {
       <section className="card">
         <h2 style={{ marginTop: 0 }}>Agent Management</h2>
         <p className="subtitle">Admins can create, update, and delete available agents.</p>
-        {!isAdmin && <p className="message-error">Your account is read-only on this page. Please login as admin to manage agents.</p>}
+        {authReady && !isAdmin && <p className="message-error">Your account is read-only on this page. Please login as admin to manage agents.</p>}
       </section>
 
-      {isAdmin && (
+      {authReady && isAdmin && (
         <form className="card" onSubmit={submitForm} style={{ display: 'grid', gap: 10, maxWidth: 760 }}>
           <h3 style={{ marginTop: 0 }}>{editingId ? 'Edit agent' : 'Create agent'}</h3>
           <input className="input" placeholder="Agent name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
